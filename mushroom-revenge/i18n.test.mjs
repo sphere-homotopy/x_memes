@@ -212,8 +212,7 @@ test('portrait phone is never blocked by a landscape warning screen',async()=>{
 test('Start tap opportunistically requests fullscreen landscape on supported browsers',async()=>{
   const page=mount({coarsePortrait:true});
   page.element('start').listeners.get('click')();
-  await Promise.resolve();
-  await Promise.resolve();
+  await new Promise(resolve=>setImmediate(resolve));
   assert.equal(page.game.getState().mode,'play');
   assert.equal(page.requestedFullscreen,1);
   assert.deepEqual(page.requestedOrientation,['landscape']);
