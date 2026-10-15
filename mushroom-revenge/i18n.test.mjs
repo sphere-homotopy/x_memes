@@ -7,7 +7,7 @@ const html = await readFile(new URL('./index.html', import.meta.url), 'utf8');
 const script = html.match(/<script>\s*('use strict';[\s\S]*?)<\/script>/)?.[1];
 assert.ok(script, 'expected inline game script');
 
-function mount({ language='en-US', query='', stored=null, deniedStorage=false }={}){
+function mount({ language='en-US', query='', stored=null, deniedStorage=false, mobilePortrait=false }={}){
   const ids=new Map();
   function element(id){
     if(!ids.has(id)){
@@ -40,7 +40,8 @@ function mount({ language='en-US', query='', stored=null, deniedStorage=false }=
     },
     addEventListener(){}
   };
-  let saved=stored, lastUrl=null;
+  let saved=stored, lastUrl=null, portrait=mobilePortrait;
+  const windowListeners=new Map();
   const location={href:'https://example.org/x_memes/mushroom-revenge/'+query,search:query};
   const window={
     location, history:{replaceState(_state,_title,newUrl){lastUrl=newUrl;const url=new URL(newUrl);location.href=url.href;location.search=url.search;}},
@@ -48,11 +49,14 @@ function mount({ language='en-US', query='', stored=null, deniedStorage=false }=
       getItem(){if(deniedStorage)throw Error('storage disabled');return saved;},
       setItem(_key,value){if(deniedStorage)throw Error('storage disabled');saved=value;}
     },
-    addEventListener(){}
+    matchMedia(query){return {matches:portrait&&query==='(max-width: 700px) and (orientation: portrait)'};},
+    addEventListener(type,listener){windowListeners.set(type,listener);}
   };
   vm.runInNewContext(script,{document,window,navigator:{language,languages:[language]},
     URL,URLSearchParams,requestAnimationFrame(){},console,Math}, {timeout:1000});
-  return {game:window.__mushroomGame,document,element,languageButtons,get saved(){return saved;},get lastUrl(){return lastUrl;}};
+  return {game:window.__mushroomGame,document,element,languageButtons,
+    resize(isPortrait){portrait=isPortrait;windowListeners.get('resize')?.();},
+    get saved(){return saved;},get lastUrl(){return lastUrl;}};
 }
 
 test('the static page has English text before JS runs',()=>{
@@ -117,4 +121,38 @@ test('works when browser denies localStorage',()=>{
   assert.equal(page.game.getState().locale,'ru');
   page.game.setLanguage('en');
   assert.equal(page.game.getState().locale,'en');
+});
+
+test('desktop game uses viewport-relative sizing, not a fixed 1040px cap',()=>{
+  assert.match(html, /width:min\(96vw,calc\(\(100dvh - 240px\)\*1\.777778\)\)/);
+  assert.doesNotMatch(html, /width:min\(100%,1040px\)/);
+});
+
+test('portrait mobile renders a square camera view and switches on resize',()=>{
+  assert.match(html, /@media\(max-width:700px\) and \(orientation:portrait\)/);
+  assert.match(html, /\.stage\{aspect-ratio:1\/1\}/);
+  assert.match(html, /\.key\{width:clamp\(56px,17vw,75px\)/);
+  const page=mount({mobilePortrait:true});
+  assert.equal(page.game.getState().viewWidth,540);
+  assert.equal(page.element('screen').width,540);
+  assert.equal(page.element('screen').height,540);
+  page.game.start();
+  const before=page.game.getState();
+  page.resize(false);
+  assert.equal(page.game.getState().viewWidth,960);
+  assert.equal(page.element('screen').width,960);
+  assert.equal(page.game.getState().mode,'play');
+  assert.equal(page.game.getState().seconds,before.seconds);
+  page.resize(true);
+  assert.equal(page.game.getState().viewWidth,540);
+});
+
+test('mobile camera follows the player without changing physics world size',()=>{
+  assert.match(html, /const W=960,H=540,FLOOR=462/);
+  assert.match(html, /Math\.max\(0,Math\.min\(W-viewWidth,player\.x\+player\.w\/2-viewWidth\*\.44\)\)/);
+  assert.match(html, /ctx\.translate\(-Math\.round\(cameraX\),0\)/);
+  const page=mount({mobilePortrait:true,language:'en-US'});
+  page.game.start();
+  assert.equal(page.game.getState().player.x,80);
+  assert.equal(page.game.getState().viewWidth,540);
 });
