@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Грибок против Марио — мини-игра</title>
+<title>Mushroom vs. Mario — Mini Game</title>
 <link rel="stylesheet" href="../support.css">
 <script src="../analytics.js"></script>
 <style>
@@ -33,39 +33,121 @@
   .key.down{background:#657caa;transform:translateY(3px);box-shadow:0 1px 0 #11182a}
   .key.jump.down{background:#ed807a}
   .sub{border:1px solid #7f8aa3;background:transparent;color:#e6e9fa;border-radius:5px;padding:10px;font-size:13px}
+  .language-switch{display:flex;gap:3px;align-items:center;padding:3px;border:1px solid #697293;border-radius:6px;background:#161e35}
+  .language-switch button{border:0;border-radius:4px;background:transparent;color:#c1c9df;padding:5px 8px;font-size:12px;font-weight:700;min-width:35px}
+  .language-switch button[aria-pressed="true"]{background:#ffdc63;color:#302b39}
   .help{text-align:center;color:#bbc4dd;font-size:clamp(11px,1.5vw,13px);line-height:1.5;margin:18px auto 0}
   @media(max-width:620px){body{padding:4px;align-items:flex-start;padding-top:12px}.controls{padding:10px}.set{gap:5px}.key{height:48px}.sub{font-size:11px}.stats{width:100%;justify-content:space-between}header{padding:10px 12px;gap:8px}.dialog p{margin-bottom:10px}}
 </style>
 </head>
 <body>
 <main class="wrap">
- <section class="cabinet" aria-label="Игра Грибок против Марио">
+ <section class="cabinet" aria-label="Mushroom vs. Mario game">
   <header>
-   <h1>🍄 ГРИБОК ПРОТИВ МАРИО</h1>
-   <div class="stats"><span>МАРИО <b id="score">0 / 10</b></span><span>ЖИЗНИ <b id="lives">♥ ♥ ♥</b></span><span>ВРЕМЯ <b id="time">90</b></span></div>
+   <h1 id="game-title">🍄 MUSHROOM VS. MARIO</h1>
+   <div class="language-switch" role="group" aria-label="Language"><button type="button" data-lang="en" aria-pressed="true">EN</button><button type="button" data-lang="ru" aria-pressed="false">RU</button></div>
+   <div class="stats"><span><span id="score-label">MARIO</span> <b id="score">0 / 10</b></span><span><span id="lives-label">LIVES</span> <b id="lives">♥ ♥ ♥</b></span><span><span id="time-label">TIME</span> <b id="time">90</b></span></div>
   </header>
   <div class="stage">
-   <canvas id="screen" width="960" height="540" role="img" aria-label="Пиксельная платформенная игра"></canvas>
+   <canvas id="screen" width="960" height="540" role="img" aria-label="Pixel-art platform game"></canvas>
    <div class="overlay" id="overlay">
     <div class="dialog">
-     <h2 id="heading">МЕСТЬ ГРИБКА</h2>
-     <p id="message">Марио всю жизнь прыгал на грибов.<br>Сегодня <strong>гриб прыгает на Марио</strong>.<br>Растопчи 10 Марио за 90 секунд!<br>Сбоку они опасны, сверху — нет.</p>
-     <button type="button" class="main" id="start">НАЧАТЬ ИГРУ ▶</button>
+     <h2 id="heading">MUSHROOM REVENGE</h2>
+     <p id="message">Mario spent his life stomping mushrooms.<br>Today <strong>the mushroom stomps Mario</strong>.<br>Stomp 10 Marios in 90 seconds!<br>They hurt from the side, but not from above.</p>
+     <button type="button" class="main" id="start">START GAME ▶</button>
     </div>
    </div>
   </div>
   <div class="controls">
-   <div class="set"><button type="button" class="key" id="left" aria-label="Влево">◀</button><button type="button" class="key" id="right" aria-label="Вправо">▶</button></div>
-   <div class="set"><button type="button" class="sub" id="pause">Ⅱ ПАУЗА</button><button type="button" class="key jump" id="jump">▲ ПРЫЖОК</button></div>
+   <div class="set"><button type="button" class="key" id="left" aria-label="Move left">◀</button><button type="button" class="key" id="right" aria-label="Move right">▶</button></div>
+   <div class="set"><button type="button" class="sub" id="pause">Ⅱ PAUSE</button><button type="button" class="key jump" id="jump">▲ JUMP</button></div>
   </div>
  </section>
- <p class="help">A / D или ← / → — бег · Пробел / ↑ / W — прыжок · P — пауза · R — заново</p>
+ <p class="help" id="help">A / D or ← / → — move · Space / ↑ / W — jump · P — pause · R — restart</p>
  <div class="support-project-wrap"><a class="support-project" href="../go/kofi/mushroom-revenge/" target="_blank" rel="noopener noreferrer">Support this project ↗</a></div>
 </main>
 <script>
 'use strict';
 (()=>{
  const $=id=>document.getElementById(id);
+ const strings={
+  en:{
+   title:'Mushroom vs. Mario — Mini Game',gameTitle:'🍄 MUSHROOM VS. MARIO',
+   gameLabel:'Mushroom vs. Mario game',canvasLabel:'Pixel-art platform game',
+   languageLabel:'Language',leftLabel:'Move left',rightLabel:'Move right',
+   scoreLabel:'MARIO',livesLabel:'LIVES',timeLabel:'TIME',
+   introTitle:'MUSHROOM REVENGE',
+   introMessage:'Mario spent his life stomping mushrooms.<br>Today <strong>the mushroom stomps Mario</strong>.<br>Stomp 10 Marios in 90 seconds!<br>They hurt from the side, but not from above.',
+   start:'START GAME ▶',pause:'Ⅱ PAUSE',resume:'▶ RESUME',jump:'▲ JUMP',
+   help:'A / D or ← / → — move · Space / ↑ / W — jump · P — pause · R — restart',
+   pauseTitle:'PAUSED',pauseMessage:'Mario can wait. The mushroom is catching its breath.',
+   continue:'CONTINUE ▶',wonTitle:'MUSHROOMS WIN!',
+   wonMessage:'You stomped every Mario!<br><strong>The Mushroom Kingdom is free.</strong>',
+   lostTitle:'MARIO WINS',lostMessage:(n)=>'You stomped <strong>'+n+'</strong> Marios.<br>Time for a rematch.',
+   retry:'PLAY AGAIN ↻'
+  },
+  ru:{
+   title:'Грибок против Марио — мини-игра',gameTitle:'🍄 ГРИБОК ПРОТИВ МАРИО',
+   gameLabel:'Игра Грибок против Марио',canvasLabel:'Пиксельная платформенная игра',
+   languageLabel:'Язык',leftLabel:'Влево',rightLabel:'Вправо',
+   scoreLabel:'МАРИО',livesLabel:'ЖИЗНИ',timeLabel:'ВРЕМЯ',
+   introTitle:'МЕСТЬ ГРИБКА',
+   introMessage:'Марио всю жизнь прыгал на грибов.<br>Сегодня <strong>гриб прыгает на Марио</strong>.<br>Растопчи 10 Марио за 90 секунд!<br>Сбоку они опасны, сверху — нет.',
+   start:'НАЧАТЬ ИГРУ ▶',pause:'Ⅱ ПАУЗА',resume:'▶ ИГРАТЬ',jump:'▲ ПРЫЖОК',
+   help:'A / D или ← / → — бег · Пробел / ↑ / W — прыжок · P — пауза · R — заново',
+   pauseTitle:'ПАУЗА',pauseMessage:'Марио ждёт. Грибок собирается с силами.',
+   continue:'ПРОДОЛЖИТЬ ▶',wonTitle:'ГРИБЫ ПОБЕДИЛИ!',
+   wonMessage:'Ты растоптал всех Марио!<br><strong>Грибное королевство свободно.</strong>',
+   lostTitle:'МАРИО ПОБЕДИЛ',lostMessage:(n)=>'Тебе удалось растоптать Марио: <strong>'+n+'</strong>.<br>Пора взять реванш.',
+   retry:'ИГРАТЬ ЕЩЁ ↻'
+  }
+ };
+ // Explicit ?lang= override > manual preference > the primary browser locale.
+ function initialLocale(){
+  const query=new URLSearchParams(window.location.search).get('lang');
+  if(query==='en'||query==='ru')return query;
+  let saved=null;
+  try{saved=window.localStorage.getItem('mushroom-language');}catch{}
+  if(saved==='en'||saved==='ru')return saved;
+  const primary=(navigator.languages&&navigator.languages[0])||navigator.language||'en';
+  return /^ru(?:[-_]|$)/i.test(primary)?'ru':'en';
+ }
+ let locale=initialLocale();
+ const tr=()=>strings[locale];
+ function renderOverlay(){
+  const t=tr();
+  if(mode==='intro')dialog(t.introTitle,t.introMessage,t.start);
+  else if(mode==='pause')dialog(t.pauseTitle,t.pauseMessage,t.continue);
+  else if(mode==='won')dialog(t.wonTitle,t.wonMessage,t.retry);
+  else if(mode==='lost')dialog(t.lostTitle,t.lostMessage(score),t.retry);
+ }
+ function applyLanguage(){
+  const t=tr();
+  document.documentElement.lang=locale;
+  document.title=t.title;
+  $('game-title').textContent=t.gameTitle;
+  document.querySelector('.cabinet').setAttribute('aria-label',t.gameLabel);
+  $('screen').setAttribute('aria-label',t.canvasLabel);
+  document.querySelector('.language-switch').setAttribute('aria-label',t.languageLabel);
+  document.querySelectorAll('[data-lang]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.lang===locale)));
+  $('left').setAttribute('aria-label',t.leftLabel);
+  $('right').setAttribute('aria-label',t.rightLabel);
+  $('score-label').textContent=t.scoreLabel;
+  $('lives-label').textContent=t.livesLabel;
+  $('time-label').textContent=t.timeLabel;
+  $('pause').textContent=mode==='pause'?t.resume:t.pause;
+  $('jump').textContent=t.jump;
+  $('help').textContent=t.help;
+  renderOverlay();
+ }
+ function setLanguage(lang){
+  if(lang!=='en'&&lang!=='ru')return;
+  locale=lang;
+  try{window.localStorage.setItem('mushroom-language',lang);}catch{}
+  try{const url=new URL(window.location.href);url.searchParams.set('lang',lang);window.history.replaceState(null,'',url.href);}catch{}
+  applyLanguage();
+ }
+ document.querySelectorAll('[data-lang]').forEach(button=>button.addEventListener('click',()=>setLanguage(button.dataset.lang)));
  const canvas=$('screen'),ctx=canvas.getContext('2d',{alpha:false});
  const W=960,H=540,FLOOR=462;
  const platforms=[{x:151,y:360,w:177},{x:415,y:293,w:181},{x:718,y:356,w:168}];
@@ -82,11 +164,11 @@
   player={x:80,y:FLOOR-43,w:39,h:43,vx:0,vy:0,ground:true,coyote:6,face:1,inv:0};
   enemies=[makeMario(0,295),makeMario(1,660),makeMario(3,515)];
   particles=[];score=0;lives=3;seconds=90;frame=0;shake=0;respawnTick=0;pressed.left=pressed.right=false;
-  mode='play';$('overlay').classList.add('hidden');$('pause').textContent='Ⅱ ПАУЗА';hud();beep(600,.13);
+  mode='play';$('overlay').classList.add('hidden');$('pause').textContent=tr().pause;hud();beep(600,.13);
  }
  function dialog(title,content,btn){$('heading').textContent=title;$('message').innerHTML=content;$('start').textContent=btn;$('overlay').classList.remove('hidden');}
- function finish(win){mode=win?'won':'lost';dialog(win?'ГРИБЫ ПОБЕДИЛИ!':'МАРИО ПОБЕДИЛ',win?'Ты растоптал всех Марио!<br><strong>Грибное королевство свободно.</strong>':'Тебе удалось растоптать Марио: <strong>'+score+'</strong>.<br>Пора взять реванш.','ИГРАТЬ ЕЩЁ ↻');beep(win?850:155,.32);}
- function pause(){if(mode==='play'){mode='pause';pressed.left=pressed.right=false;dialog('ПАУЗА','Марио ждёт. Грибок собирается с силами.','ПРОДОЛЖИТЬ ▶');$('pause').textContent='▶ ИГРАТЬ';}else if(mode==='pause'){mode='play';$('overlay').classList.add('hidden');$('pause').textContent='Ⅱ ПАУЗА';}}
+ function finish(win){mode=win?'won':'lost';renderOverlay();beep(win?850:155,.32);}
+ function pause(){if(mode==='play'){mode='pause';pressed.left=pressed.right=false;renderOverlay();$('pause').textContent=tr().resume;}else if(mode==='pause'){mode='play';$('overlay').classList.add('hidden');$('pause').textContent=tr().pause;}}
  function jump(){if(mode==='intro'||mode==='lost'||mode==='won'){setup();return;}if(mode==='pause'){pause();return;}if(mode!=='play')return;if(player.ground||player.coyote>0){player.vy=-15.9;player.ground=false;player.coyote=0;dust(player.x+20,player.y+40,'#fff1b6',7,2.6);beep(420,.10);}}
  function dust(x,y,color,n=12,power=5){for(let k=0;k<n;k++){let a=Math.random()*Math.PI*2,v=.5+Math.random()*power;particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1.3,life:18+Math.random()*18,max:36,color,size:2+Math.random()*5});}}
  function damage(){if(player.inv>0||mode!=='play')return;lives--;player.inv=95;player.vy=-9;player.vx=player.x<480?-5:5;shake=11;dust(player.x+19,player.y+20,'#fff080',17,6);beep(180,.24);hud();if(lives<=0)finish(false);}
@@ -188,8 +270,8 @@
  bind('left','left');bind('right','right');bind('jump','jump');
  $('start').addEventListener('click',()=>{if(mode==='pause')pause();else setup();});
  $('pause').addEventListener('click',pause);
- hud();requestAnimationFrame(loop);
- window.__mushroomGame={getState:()=>({mode,score,lives,seconds,player:{...player},enemies:enemies.length}),start:setup,jump};
+ applyLanguage();hud();requestAnimationFrame(loop);
+ window.__mushroomGame={getState:()=>({mode,score,lives,seconds,locale,player:player?{...player}:null,enemies:enemies.length}),start:setup,jump,setLanguage};
 })();
 </script>
 </body>
