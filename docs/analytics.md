@@ -8,6 +8,7 @@ Project pageviews are separated by path:
 - Mirrors: `/x_memes/`
 - Millionaire: `/x_memes/millionaire/`
 - Custom Boob: `/x_memes/custom-boob/`
+- Mushroom Revenge: `/x_memes/mushroom-revenge/`
 
 Acquisition experiments use first-party route paths instead of UTM parameters:
 - Reddit: `/x_memes/go/millionaire/reddit/`
@@ -18,6 +19,7 @@ Ko-fi click intents use first-party route paths before redirecting to Ko-fi:
 - Millionaire: `/x_memes/go/kofi/millionaire/`
 - Mirrors: `/x_memes/go/kofi/mirrors/`
 - Custom Boob: `/x_memes/go/kofi/custom-boob/`
+- Mushroom Revenge: `/x_memes/go/kofi/mushroom-revenge/`
 
 This makes project/source attribution readable from path/referrer dimensions and avoids relying on cross-site cookies.
 
@@ -31,6 +33,10 @@ This makes project/source attribution readable from path/referrer dimensions and
 4. Verify a normal project pageview and one `/go/kofi/.../` click appear in Web Analytics before public seeding.
 
 No other project file should need a provider-specific token.
+
+## New projects
+
+New top-level web toys must include `support.css`, `analytics.js`, the shared Ko-fi support control, and their own `go/kofi/<project>/` tracked redirect. See `AGENTS.md` for the exact markup. The automatically discovered project checks in `support.test.mjs` enforce this on pull requests and pushes to `main`; they validate integration but do not inject markup at build time.
 
 ## Reading the experiment
 
