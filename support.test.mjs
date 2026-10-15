@@ -1,20 +1,44 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 
-const pages = [
-  ['index.html', './go/kofi/mirrors/', './analytics.js'],
-  ['millionaire/index.html', '../go/kofi/millionaire/', '../analytics.js'],
-  ['custom-boob/index.html', '../go/kofi/custom-boob/', '../analytics.js'],
-];
+const root = new URL('./', import.meta.url);
+const supportTarget = 'https://ko-fi.com/sphere_homotopy';
 
-for (const [page, supportHref, analyticsSrc] of pages) {
-  test(`${page} uses the shared tracked Ko-fi support control`, async () => {
-    const html = await readFile(new URL(`./${page}`, import.meta.url), 'utf8');
-    assert.match(html, new RegExp(`href="${supportHref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`));
-    assert.match(html, new RegExp(`src="${analyticsSrc.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`));
+// All standalone projects live at / or in top-level directories. The /go/
+// tree contains tracking redirects, not projects; docs and scripts are not apps.
+const excluded = new Set(['go', 'docs', 'scripts', 'analytics', 'node_modules']);
+
+const pages = [{ path: 'index.html', slug: 'mirrors', prefix: './' }];
+for (const entry of await readdir(root, { withFileTypes: true })) {
+  if (!entry.isDirectory() || entry.name.startsWith('.') || excluded.has(entry.name)) continue;
+  const path = `${entry.name}/index.html`;
+  try {
+    await readFile(new URL(path, root), 'utf8');
+  } catch (error) {
+    if (error.code === 'ENOENT') continue;
+    throw error;
+  }
+  pages.push({ path, slug: entry.name, prefix: '../' });
+}
+
+for (const { path, slug, prefix } of pages) {
+  test(`${path} uses the shared tracked Ko-fi support control and analytics`, async () => {
+    const html = await readFile(new URL(path, root), 'utf8');
+    assert.ok(html.includes(`href="${prefix}support.css"`), 'missing shared Ko-fi stylesheet');
+    assert.ok(html.includes(`src="${prefix}analytics.js"`), 'missing Cloudflare analytics loader');
+    assert.ok(html.includes(`href="${prefix}go/kofi/${slug}/"`), 'missing project-specific tracked Ko-fi link');
+    assert.match(html, /class="support-project-wrap"/);
     assert.match(html, /class="support-project"/);
     assert.match(html, /rel="noopener noreferrer"/);
+  });
+
+  test(`${slug} has a tracked, noindex Ko-fi redirect`, async () => {
+    const html = await readFile(new URL(`go/kofi/${slug}/index.html`, root), 'utf8');
+    assert.ok(html.includes(`data-target="${supportTarget}"`));
+    assert.ok(html.includes('src="../../../analytics.js"'));
+    assert.ok(html.includes('name="robots" content="noindex,nofollow"'));
+    assert.match(html, /setTimeout\(.*location\.replace/);
   });
 }
 
