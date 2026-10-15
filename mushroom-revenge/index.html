@@ -180,6 +180,17 @@
  document.querySelectorAll('[data-lang]').forEach(button=>button.addEventListener('click',()=>setLanguage(button.dataset.lang)));
  const canvas=$('screen'),ctx=canvas.getContext('2d',{alpha:false});
  const W=960,H=540,FLOOR=462;
+ // A square view makes the same 960px-wide world playable in portrait.
+ // Only the camera moves; physics and enemy coordinates stay unchanged.
+ let viewWidth=W,cameraX=0;
+ function syncViewport(){
+  const portrait=Boolean(window.matchMedia&&window.matchMedia('(max-width: 700px) and (orientation: portrait)').matches);
+  const desired=portrait?540:W;
+  if(canvas.width!==desired||canvas.height!==H){canvas.width=desired;canvas.height=H;}
+  viewWidth=desired;
+  cameraX=Math.max(0,Math.min(W-viewWidth,cameraX));
+ }
+ window.addEventListener('resize',syncViewport);
  const platforms=[{x:151,y:360,w:177},{x:415,y:293,w:181},{x:718,y:356,w:168}];
  const lanes=[{min:65,max:350,y:FLOOR},{min:384,max:890,y:FLOOR},{min:160,max:314,y:360},{min:423,max:582,y:293},{min:728,max:870,y:356}];
  const pressed={left:false,right:false};
@@ -278,7 +289,13 @@
   block(11,34,5,5,'#f8e489');block(25,34,5,5,'#f8e489');block(5,41+a,14,8,'#643e38');block(21,41+2-a,13,8,'#643e38');ctx.restore();
  }
  function draw(){
-  ctx.save();if(shake)ctx.translate(Math.round(Math.sin(frame*14)*shake*.45),Math.round(Math.cos(frame*9)*shake*.28));
+  ctx.save();
+  const target=player?Math.max(0,Math.min(W-viewWidth,player.x+player.w/2-viewWidth*.44)):0;
+  if(Math.abs(target-cameraX)>viewWidth*.52)cameraX=target;
+  else cameraX+=(target-cameraX)*.2;
+  if(Math.abs(target-cameraX)<.25)cameraX=target;
+  if(shake)ctx.translate(Math.round(Math.sin(frame*14)*shake*.45),Math.round(Math.cos(frame*9)*shake*.28));
+  ctx.translate(-Math.round(cameraX),0);
   background();for(let e of enemies)mario(e);if(player)mushroom(player);
   for(let p of particles){ctx.globalAlpha=Math.min(1,p.life/11);block(p.x,p.y,p.size,p.size,p.color);}ctx.globalAlpha=1;
   ctx.restore();
@@ -300,8 +317,8 @@
  bind('left','left');bind('right','right');bind('jump','jump');
  $('start').addEventListener('click',()=>{if(mode==='pause')pause();else setup();});
  $('pause').addEventListener('click',pause);
- applyLanguage();hud();requestAnimationFrame(loop);
- window.__mushroomGame={getState:()=>({mode,score,lives,seconds,locale,player:player?{...player}:null,enemies:enemies.length}),start:setup,jump,setLanguage};
+ syncViewport();applyLanguage();hud();requestAnimationFrame(loop);
+ window.__mushroomGame={getState:()=>({mode,score,lives,seconds,locale,viewWidth,cameraX,player:player?{...player}:null,enemies:enemies.length}),start:setup,jump,setLanguage};
 })();
 </script>
 </body>
