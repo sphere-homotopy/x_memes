@@ -152,7 +152,7 @@ test('orientation lock requests fullscreen and landscape after a tap',async()=>{
   assert.equal(page.element('orientation-button').listeners.has('click'),true);
   const ok=await page.element('orientation-button').listeners.get('click')();
   // The UI click calls the same promise-returning function exposed for tests.
-  assert.equal(ok,undefined);
+  assert.equal(ok,true);
   assert.equal(page.requestedFullscreen,1);
   assert.deepEqual(page.requestedOrientation,['landscape']);
 });
