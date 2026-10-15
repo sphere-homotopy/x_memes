@@ -38,36 +38,27 @@
   .language-switch button[aria-pressed="true"]{background:#ffdc63;color:#302b39}
   .help{text-align:center;color:#bbc4dd;font-size:max(12px,.85vw);line-height:1.5;margin:18px auto 0}
   .support-project::after{font-size:max(13px,.9vw)}
-  @media(max-width:700px) and (orientation:portrait){
-    body{padding:8px;align-items:flex-start;justify-content:center}
-    .wrap{width:100%}
-    .cabinet{border-radius:9px}
-    header{padding:9px 11px;gap:9px}
-    h1{font-size:clamp(12px,3.6vw,20px)}
-    .stats{order:3;width:100%;justify-content:space-between;font-size:clamp(11px,2.9vw,14px)}
-    .language-switch button{min-width:42px;min-height:34px}
-    .stage{aspect-ratio:1/1}
-    .controls{padding:12px 10px}
-    .set{gap:10px}
-    .key{width:clamp(56px,17vw,75px);height:clamp(56px,15vw,72px)}
-    .key.jump{width:clamp(110px,32vw,155px);font-size:clamp(13px,3.3vw,17px)}
-    .sub{min-height:50px;font-size:clamp(11px,2.7vw,14px)}
-    .help{margin:13px 9px 0;font-size:12px}
-    .support-project-wrap{padding:14px 8px 20px}
+  .orientation-gate{display:none;position:fixed;inset:0;z-index:30;align-items:center;justify-content:center;flex-direction:column;gap:15px;padding:30px;text-align:center;background:#151a2e;color:#f9f6ea}
+  .orientation-gate h2{margin:0;color:#ffdc63;font-size:clamp(24px,7vw,38px)}
+  .orientation-gate p{margin:0;max-width:350px;font-size:16px;line-height:1.5}
+  .orientation-gate button{border:0;border-radius:8px;background:#ffdc63;color:#242038;font-weight:bold;padding:15px 20px;font-size:17px;min-height:52px}
+  .orientation-symbol{font-size:54px;line-height:1}
+  @media(max-width:900px) and (orientation:portrait) and (pointer:coarse){
+    .orientation-gate{display:flex}
+    body{overflow:hidden}
   }
-  @media(max-width:700px) and (orientation:landscape), (max-height:520px) and (orientation:landscape){
+  @media(max-width:900px) and (orientation:landscape) and (pointer:coarse), (max-height:520px) and (orientation:landscape){
     body{align-items:flex-start;padding:4px}
-    .wrap{width:98vw;width:min(98vw,calc((100dvh - 125px)*1.777778))}
+    .wrap{width:98vw;width:min(98vw,calc((100dvh - 119px)*1.777778))}
     header{padding:5px 10px;gap:8px}
     .controls{padding:5px 10px}
-    .key{height:42px;width:52px}
-    .key.jump{width:108px}
+    .key{height:48px;width:58px}
+    .key.jump{width:120px}
     .sub{padding:8px;font-size:11px}
     .help{display:none}
     .support-project-wrap{padding:5px 8px 8px}
     .support-project{min-height:32px;padding:5px 10px}
   }
-  @media(max-width:340px){header{gap:5px}.language-switch button{min-width:36px}.controls{padding:8px 5px}.set{gap:5px}.key{width:50px}.key.jump{width:96px}}
   @media(prefers-reduced-motion:reduce){body{scroll-behavior:auto}}
 </style>
 </head>
@@ -97,6 +88,12 @@
  <p class="help" id="help">A / D or ← / → — move · Space / ↑ / W — jump · P — pause · R — restart</p>
  <div class="support-project-wrap"><a class="support-project" href="../go/kofi/mushroom-revenge/" target="_blank" rel="noopener noreferrer">Support this project ↗</a></div>
 </main>
+<div class="orientation-gate" id="orientation-gate" role="dialog" aria-labelledby="orientation-heading">
+ <div class="orientation-symbol" aria-hidden="true">▭</div>
+ <h2 id="orientation-heading">LANDSCAPE MODE</h2>
+ <p id="orientation-message">Turn your phone sideways to play. You can also try automatic rotation.</p>
+ <button type="button" id="orientation-button">PLAY LANDSCAPE ▶</button>
+</div>
 <script>
 'use strict';
 (()=>{
@@ -115,7 +112,8 @@
    continue:'CONTINUE ▶',wonTitle:'MUSHROOMS WIN!',
    wonMessage:'You stomped every Mario!<br><strong>The Mushroom Kingdom is free.</strong>',
    lostTitle:'MARIO WINS',lostMessage:(n)=>'You stomped <strong>'+n+'</strong> Marios.<br>Time for a rematch.',
-   retry:'PLAY AGAIN ↻'
+   retry:'PLAY AGAIN ↻',
+   rotateTitle:'LANDSCAPE MODE',rotateMessage:'Turn your phone sideways to play. You can also try automatic rotation.',rotateButton:'PLAY LANDSCAPE ▶',rotateManual:'Please rotate your phone sideways. This browser cannot rotate the screen automatically.'
   },
   ru:{
    title:'Грибок против Марио — мини-игра',gameTitle:'🍄 ГРИБОК ПРОТИВ МАРИО',
@@ -130,7 +128,8 @@
    continue:'ПРОДОЛЖИТЬ ▶',wonTitle:'ГРИБЫ ПОБЕДИЛИ!',
    wonMessage:'Ты растоптал всех Марио!<br><strong>Грибное королевство свободно.</strong>',
    lostTitle:'МАРИО ПОБЕДИЛ',lostMessage:(n)=>'Тебе удалось растоптать Марио: <strong>'+n+'</strong>.<br>Пора взять реванш.',
-   retry:'ИГРАТЬ ЕЩЁ ↻'
+   retry:'ИГРАТЬ ЕЩЁ ↻',
+   rotateTitle:'ГОРИЗОНТАЛЬНЫЙ РЕЖИМ',rotateMessage:'Поверни телефон горизонтально для игры. Можно попробовать автоматический поворот.',rotateButton:'ИГРАТЬ ГОРИЗОНТАЛЬНО ▶',rotateManual:'Поверни телефон горизонтально вручную: браузер не разрешил автоматический поворот.'
   }
  };
  // Explicit ?lang= override > manual preference > the primary browser locale.
@@ -169,6 +168,9 @@
   $('pause').textContent=mode==='pause'?t.resume:t.pause;
   $('jump').textContent=t.jump;
   $('help').textContent=t.help;
+  $('orientation-heading').textContent=t.rotateTitle;
+  $('orientation-message').textContent=t.rotateMessage;
+  $('orientation-button').textContent=t.rotateButton;
   renderOverlay();
  }
  function setLanguage(lang){
@@ -181,17 +183,6 @@
  document.querySelectorAll('[data-lang]').forEach(button=>button.addEventListener('click',()=>setLanguage(button.dataset.lang)));
  const canvas=$('screen'),ctx=canvas.getContext('2d',{alpha:false});
  const W=960,H=540,FLOOR=462;
- // A square view makes the same 960px-wide world playable in portrait.
- // Only the camera moves; physics and enemy coordinates stay unchanged.
- let viewWidth=W,cameraX=0;
- function syncViewport(){
-  const portrait=Boolean(window.matchMedia&&window.matchMedia('(max-width: 700px) and (orientation: portrait)').matches);
-  const desired=portrait?540:W;
-  if(canvas.width!==desired||canvas.height!==H){canvas.width=desired;canvas.height=H;}
-  viewWidth=desired;
-  cameraX=Math.max(0,Math.min(W-viewWidth,cameraX));
- }
- window.addEventListener('resize',syncViewport);
  const platforms=[{x:151,y:360,w:177},{x:415,y:293,w:181},{x:718,y:356,w:168}];
  const lanes=[{min:65,max:350,y:FLOOR},{min:384,max:890,y:FLOOR},{min:160,max:314,y:360},{min:423,max:582,y:293},{min:728,max:870,y:356}];
  const pressed={left:false,right:false};
@@ -291,12 +282,7 @@
  }
  function draw(){
   ctx.save();
-  const target=player?Math.max(0,Math.min(W-viewWidth,player.x+player.w/2-viewWidth*.44)):0;
-  if(Math.abs(target-cameraX)>viewWidth*.52)cameraX=target;
-  else cameraX+=(target-cameraX)*.2;
-  if(Math.abs(target-cameraX)<.25)cameraX=target;
   if(shake)ctx.translate(Math.round(Math.sin(frame*14)*shake*.45),Math.round(Math.cos(frame*9)*shake*.28));
-  ctx.translate(-Math.round(cameraX),0);
   background();for(let e of enemies)mario(e);if(player)mushroom(player);
   for(let p of particles){ctx.globalAlpha=Math.min(1,p.life/11);block(p.x,p.y,p.size,p.size,p.color);}ctx.globalAlpha=1;
   ctx.restore();
@@ -318,8 +304,28 @@
  bind('left','left');bind('right','right');bind('jump','jump');
  $('start').addEventListener('click',()=>{if(mode==='pause')pause();else setup();});
  $('pause').addEventListener('click',pause);
- syncViewport();applyLanguage();hud();requestAnimationFrame(loop);
- window.__mushroomGame={getState:()=>({mode,score,lives,seconds,locale,viewWidth,cameraX,player:player?{...player}:null,enemies:enemies.length}),start:setup,jump,setLanguage};
+ // Orientation locking requires a user gesture and is not available in all mobile browsers.
+ // If it is unsupported, the landscape-only prompt remains visible until rotation.
+ async function requestLandscape(){
+  const orientation=window.screen&&window.screen.orientation;
+  if(!orientation||typeof orientation.lock!=='function'){
+   $('orientation-message').textContent=tr().rotateManual;
+   return false;
+  }
+  try{
+   if(!document.fullscreenElement&&document.documentElement.requestFullscreen){
+    try{await document.documentElement.requestFullscreen();}catch{}
+   }
+   await orientation.lock('landscape');
+   return true;
+  }catch{
+   $('orientation-message').textContent=tr().rotateManual;
+   return false;
+  }
+ }
+ $('orientation-button').addEventListener('click',requestLandscape);
+ applyLanguage();hud();requestAnimationFrame(loop);
+ window.__mushroomGame={getState:()=>({mode,score,lives,seconds,locale,player:player?{...player}:null,enemies:enemies.length}),start:setup,jump,setLanguage,requestLandscape};
 })();
 </script>
 </body>
