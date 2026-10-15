@@ -6,6 +6,14 @@ The repository is intentionally lightweight: mostly static HTML/CSS/JavaScript p
 
 ## Projects
 
+### Mushroom Revenge — Грибок против Марио
+
+A tiny pixel-art platformer that flips the familiar roles: play as a mushroom, jump onto Mario from above, and defeat ten Marios before time runs out.
+
+- **Controls:** A/D or arrow keys to move, Space or Up to jump, P to pause.
+- **Live:** https://sphere-homotopy.github.io/x_memes/mushroom-revenge/
+- **Source:** [mushroom-revenge/index.html](mushroom-revenge/index.html)
+
 ### Where Are You a Millionaire?
 
 Enter an amount of money and see which countries make you a “millionaire” in local currency.
