@@ -125,18 +125,20 @@ test('works when browser denies localStorage',()=>{
 });
 
 test('desktop game uses viewport-relative sizing, not a fixed 1040px cap',()=>{
-  assert.match(html, /width:min\\(96vw,calc\\(\\(100dvh - 240px\\)\\*1\\.777778\\)\\)/);
-  assert.doesNotMatch(html, /width:min\\(100%,1040px\\)/);
+  assert.ok(html.includes('width:min(96vw,calc((100dvh - 240px)*1.777778))'));
+  assert.ok(!html.includes('width:min(100%,1040px)'));
 });
 
 test('mobile game keeps the original landscape 16:9 world with no portrait camera',()=>{
-  assert.match(html, /\\.stage\\{position:relative;aspect-ratio:16\\/9/);
-  assert.match(html, /orientation-gate/);
-  assert.match(html, /\\(orientation:portrait\\) and \\(pointer:coarse\\)/);
-  assert.match(html, /\\.orientation-gate\\{display:flex\\}/);
-  assert.doesNotMatch(html, /\\.stage\\{aspect-ratio:1\\/1\\}/);
-  assert.doesNotMatch(html, /cameraX|viewWidth|syncViewport/);
-  assert.match(html, /canvas id="screen" width="960" height="540"/);
+  assert.ok(html.includes('.stage{position:relative;aspect-ratio:16/9'));
+  assert.ok(html.includes('orientation-gate'));
+  assert.ok(html.includes('(orientation:portrait) and (pointer:coarse)'));
+  assert.ok(html.includes('.orientation-gate{display:flex}'));
+  assert.ok(!html.includes('.stage{aspect-ratio:1/1}'));
+  assert.ok(!html.includes('cameraX'));
+  assert.ok(!html.includes('viewWidth'));
+  assert.ok(!html.includes('syncViewport'));
+  assert.ok(html.includes('canvas id="screen" width="960" height="540"'));
 });
 
 test('orientation prompt localizes to Russian and English',()=>{
