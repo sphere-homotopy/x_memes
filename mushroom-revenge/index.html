@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Грибок против Марио — мини-игра</title>
+<style>
+  :root{color-scheme:dark;--panel:#20253d;--gold:#ffdc66;--white:#f9f6ea}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;justify-content:center;align-items:center;padding:14px;background:radial-gradient(ellipse at 50% 20%,#303e68 0,#131626 72%);color:var(--white);font-family:ui-monospace,Consolas,'Courier New',monospace}
+  .wrap{width:min(100%,1040px)}
+  .cabinet{overflow:hidden;border:3px solid #4a5174;border-radius:12px;box-shadow:0 13px 0 #0b0e1b,0 28px 70px #06091380;background:var(--panel)}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:13px 19px;background:#252b46;border-bottom:2px solid #10172a}
+  h1{font-size:clamp(13px,2.3vw,22px);margin:0;color:var(--gold);letter-spacing:1px;font-weight:1000;text-shadow:2px 2px 0 #8f5d32}
+  .stats{display:flex;gap:clamp(9px,2vw,24px);font-size:clamp(11px,1.65vw,16px);font-weight:bold}
+  .stats b{color:#f8dc78}
+  .stage{position:relative;aspect-ratio:16/9;overflow:hidden;background:#a3d9eb}
+  canvas{display:block;width:100%;height:100%;image-rendering:pixelated;touch-action:none}
+  .overlay{position:absolute;inset:0;display:grid;place-items:center;background:#121831bd;padding:10px;z-index:3}
+  .overlay.hidden{display:none}
+  .dialog{max-width:475px;width:100%;text-align:center;background:#262c49;border:3px solid #ffe28a;border-radius:6px;padding:clamp(14px,3vw,30px);box-shadow:7px 7px 0 #101528}
+  .dialog h2{font-size:clamp(22px,4vw,34px);margin:0 0 13px;color:var(--gold);text-shadow:3px 3px 0 #ab5349}
+  .dialog p{font-size:clamp(12px,1.65vw,15px);line-height:1.65;color:#e2e6f3;margin:0 0 17px}
+  button{font-family:inherit;touch-action:none;cursor:pointer;user-select:none;-webkit-user-select:none}
+  .main{border:0;border-radius:5px;background:#ffdc63;color:#342a2b;font-weight:1000;font-size:clamp(13px,2vw,17px);padding:12px 25px;box-shadow:0 5px 0 #a57538}
+  .main:active{transform:translateY(3px);box-shadow:0 2px 0 #a57538}
+  .controls{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;background:#222941}
+  .set{display:flex;gap:10px;align-items:center}
+  .key{width:clamp(49px,9vw,66px);height:52px;border:2px solid #7180a5;border-radius:7px;background:#455173;color:#fff;font-size:24px;font-weight:1000;box-shadow:0 4px 0 #11182a}
+  .key.jump{width:clamp(100px,20vw,135px);background:#d95855;border-color:#ff9790;font-size:16px}
+  .key.down{background:#657caa;transform:translateY(3px);box-shadow:0 1px 0 #11182a}
+  .key.jump.down{background:#ed807a}
+  .sub{border:1px solid #7f8aa3;background:transparent;color:#e6e9fa;border-radius:5px;padding:10px;font-size:13px}
+  .help{text-align:center;color:#bbc4dd;font-size:clamp(11px,1.5vw,13px);line-height:1.5;margin:18px auto 0}
+  @media(max-width:620px){body{padding:4px;align-items:flex-start;padding-top:12px}.controls{padding:10px}.set{gap:5px}.key{height:48px}.sub{font-size:11px}.stats{width:100%;justify-content:space-between}header{padding:10px 12px;gap:8px}.dialog p{margin-bottom:10px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+ <section class="cabinet" aria-label="Игра Грибок против Марио">
+  <header>
+   <h1>🍄 ГРИБОК ПРОТИВ МАРИО</h1>
+   <div class="stats"><span>МАРИО <b id="score">0 / 10</b></span><span>ЖИЗНИ <b id="lives">♥ ♥ ♥</b></span><span>ВРЕМЯ <b id="time">90</b></span></div>
+  </header>
+  <div class="stage">
+   <canvas id="screen" width="960" height="540" role="img" aria-label="Пиксельная платформенная игра"></canvas>
+   <div class="overlay" id="overlay">
+    <div class="dialog">
+     <h2 id="heading">МЕСТЬ ГРИБКА</h2>
+     <p id="message">Марио всю жизнь прыгал на грибов.<br>Сегодня <strong>гриб прыгает на Марио</strong>.<br>Растопчи 10 Марио за 90 секунд!<br>Сбоку они опасны, сверху — нет.</p>
+     <button type="button" class="main" id="start">НАЧАТЬ ИГРУ ▶</button>
+    </div>
+   </div>
+  </div>
+  <div class="controls">
+   <div class="set"><button type="button" class="key" id="left" aria-label="Влево">◀</button><button type="button" class="key" id="right" aria-label="Вправо">▶</button></div>
+   <div class="set"><button type="button" class="sub" id="pause">Ⅱ ПАУЗА</button><button type="button" class="key jump" id="jump">▲ ПРЫЖОК</button></div>
+  </div>
+ </section>
+ <p class="help">A / D или ← / → — бег · Пробел / ↑ / W — прыжок · P — пауза · R — заново</p>
+</main>
+<script>
+'use strict';
+(()=>{
+ const $=id=>document.getElementById(id);
+ const canvas=$('screen'),ctx=canvas.getContext('2d',{alpha:false});
+ const W=960,H=540,FLOOR=462;
+ const platforms=[{x:151,y:360,w:177},{x:415,y:293,w:181},{x:718,y:356,w:168}];
+ const lanes=[{min:65,max:350,y:FLOOR},{min:384,max:890,y:FLOOR},{min:160,max:314,y:360},{min:423,max:582,y:293},{min:728,max:870,y:356}];
+ const pressed={left:false,right:false};
+ let mode='intro',player,enemies=[],particles=[],score=0,lives=3,seconds=90,frame=0,shake=0,respawnTick=0,last=0,acc=0;
+ let actx=null;
+ function beep(f=470,d=.1){
+  try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;actx=actx||new AC();if(actx.state==='suspended')actx.resume();let o=actx.createOscillator(),g=actx.createGain();o.type='square';o.frequency.setValueAtTime(f,actx.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(80,f*.56),actx.currentTime+d);g.gain.setValueAtTime(.036,actx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+d);o.connect(g);g.connect(actx.destination);o.start();o.stop(actx.currentTime+d)}catch(e){}
+ }
+ function hud(){ $('score').textContent=score+' / 10';$('lives').textContent='♥ '.repeat(Math.max(0,lives)).trim()||'—';$('time').textContent=Math.ceil(seconds); }
+ function makeMario(laneId,x){const lane=lanes[laneId];return {lane:laneId,x:x===undefined?lane.min+Math.random()*(lane.max-lane.min-35):x,y:lane.y-49,w:35,h:49,base:lane.y-49,dir:Math.random()<.5?-1:1,speed:1+Math.random()*.55,vy:0,walk:Math.random()*7};}
+ function setup(){
+  player={x:80,y:FLOOR-43,w:39,h:43,vx:0,vy:0,ground:true,coyote:6,face:1,inv:0};
+  enemies=[makeMario(0,295),makeMario(1,660),makeMario(3,515)];
+  particles=[];score=0;lives=3;seconds=90;frame=0;shake=0;respawnTick=0;pressed.left=pressed.right=false;
+  mode='play';$('overlay').classList.add('hidden');$('pause').textContent='Ⅱ ПАУЗА';hud();beep(600,.13);
+ }
+ function dialog(title,content,btn){$('heading').textContent=title;$('message').innerHTML=content;$('start').textContent=btn;$('overlay').classList.remove('hidden');}
+ function finish(win){mode=win?'won':'lost';dialog(win?'ГРИБЫ ПОБЕДИЛИ!':'МАРИО ПОБЕДИЛ',win?'Ты растоптал всех Марио!<br><strong>Грибное королевство свободно.</strong>':'Тебе удалось растоптать Марио: <strong>'+score+'</strong>.<br>Пора взять реванш.','ИГРАТЬ ЕЩЁ ↻');beep(win?850:155,.32);}
+ function pause(){if(mode==='play'){mode='pause';pressed.left=pressed.right=false;dialog('ПАУЗА','Марио ждёт. Грибок собирается с силами.','ПРОДОЛЖИТЬ ▶');$('pause').textContent='▶ ИГРАТЬ';}else if(mode==='pause'){mode='play';$('overlay').classList.add('hidden');$('pause').textContent='Ⅱ ПАУЗА';}}
+ function jump(){if(mode==='intro'||mode==='lost'||mode==='won'){setup();return;}if(mode==='pause'){pause();return;}if(mode!=='play')return;if(player.ground||player.coyote>0){player.vy=-15.9;player.ground=false;player.coyote=0;dust(player.x+20,player.y+40,'#fff1b6',7,2.6);beep(420,.10);}}
+ function dust(x,y,color,n=12,power=5){for(let k=0;k<n;k++){let a=Math.random()*Math.PI*2,v=.5+Math.random()*power;particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1.3,life:18+Math.random()*18,max:36,color,size:2+Math.random()*5});}}
+ function damage(){if(player.inv>0||mode!=='play')return;lives--;player.inv=95;player.vy=-9;player.vx=player.x<480?-5:5;shake=11;dust(player.x+19,player.y+20,'#fff080',17,6);beep(180,.24);hud();if(lives<=0)finish(false);}
+ function update(){
+  if(mode!=='play')return;
+  frame++;seconds=Math.max(0,seconds-1/60);if(seconds<=0){finish(false);return;}
+  if(player.inv>0)player.inv--;if(shake>0)shake--;
+  const oldFeet=player.y+player.h,wasGround=player.ground;
+  let dir=Number(pressed.right)-Number(pressed.left);
+  if(dir){player.vx+=(dir*5.1-player.vx)*.32;player.face=dir;}else player.vx*=player.ground?.72:.88;
+  player.x=Math.max(0,Math.min(W-player.w,player.x+player.vx));
+  player.vy=Math.min(15,player.vy+.66);player.y+=player.vy;player.ground=false;
+  if(player.vy>=0){
+   const surfaces=[{x:0,y:FLOOR,w:W},...platforms];
+   for(let s of surfaces){
+    if(oldFeet<=s.y+6&&player.y+player.h>=s.y&&player.x+player.w-7>s.x&&player.x+7<s.x+s.w){
+     if(!player.ground){player.y=s.y-player.h;player.vy=0;player.ground=true;}
+    }
+   }
+  }
+  player.coyote=player.ground?6:Math.max(0,player.coyote-1);
+  if(!wasGround&&player.ground)dust(player.x+19,player.y+43,'#ffedd0',4,2);
+  for(let i=enemies.length-1;i>=0;i--){
+   let e=enemies[i];e.x+=e.speed*e.dir*(1+score*.045);e.walk+=.13;
+   const lane=lanes[e.lane];if(e.x<lane.min){e.x=lane.min;e.dir=1;}if(e.x+e.w>lane.max){e.x=lane.max-e.w;e.dir=-1;}
+   if(e.lane<2&&e.y>=e.base&&Math.random()<.0009)e.vy=-8.2;
+   if(e.vy||e.y<e.base){e.vy+=.37;e.y+=e.vy;if(e.y>e.base){e.y=e.base;e.vy=0;}}
+   const intersect=player.x+player.w-6>e.x&&player.x+6<e.x+e.w&&player.y+player.h-3>e.y&&player.y+4<e.y+e.h;
+   if(intersect){
+    if(player.vy>1.2&&oldFeet<=e.y+18&&player.y+player.h<e.y+e.h*.85){
+     enemies.splice(i,1);player.vy=-12.7;player.ground=false;player.coyote=0;score++;shake=4;
+     dust(e.x+17,e.y+19,'#ffdc4b',18,6);dust(e.x+17,e.y+19,'#e14e56',8,4);beep(790,.14);
+     respawnTick=40;hud();if(score>=10){finish(true);return;}
+    }else damage();
+   }
+  }
+  if(respawnTick>0)respawnTick--;
+  if(enemies.length<3&&respawnTick===0){
+   let candidate=0;
+   for(let n=0;n<10;n++){let k=Math.floor(Math.random()*lanes.length),l=lanes[k];if(l.y!==FLOOR||player.x<l.min-150||player.x>l.max+100){candidate=k;break;}candidate=k;}
+   let e=makeMario(candidate);if(Math.abs(e.x-player.x)<150&&Math.abs(e.y-player.y)<70)e.x=lanes[candidate].max-e.w;
+   enemies.push(e);respawnTick=60;
+  }
+  for(let i=particles.length-1;i>=0;i--){let p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vy+=.23;p.life--;if(p.life<=0)particles.splice(i,1);}
+  if(frame%12===0)hud();
+ }
+ function block(x,y,w,h,color){ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
+ function cloud(x,y,s){ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.scale(s,s);block(10,19,106,30,'#deffff');block(26,0,36,40,'#fff');block(60,-13,35,53,'#fff');block(10,28,110,15,'#fff');ctx.restore();}
+ function hill(x,y,w,h,color){ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+w*.52,y-h*1.9,x+w,y);ctx.closePath();ctx.fill();}
+ function background(){
+  let sky=ctx.createLinearGradient(0,0,0,FLOOR);sky.addColorStop(0,'#79c8f2');sky.addColorStop(1,'#d0f4db');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+  block(728,68,70,70,'#fff2a1');block(739,79,48,48,'#ffdd65');
+  cloud(57+(frame*.065)%45,100,1);cloud(438-(frame*.025)%45,64,.83);cloud(808,137,.62);
+  hill(-110,455,440,190,'#a4df92');hill(210,461,480,160,'#8bd38a');hill(575,458,540,220,'#a3db8b');
+  hill(-65,470,335,88,'#58bc78');hill(285,471,375,122,'#63c47d');hill(691,469,410,125,'#55b975');
+  for(let i=0;i<11;i++){let x=29+i*92;block(x,435+(i%3)*6,8,25,'#459f64');block(x-10,431+(i%3)*6,27,9,'#53b975');}
+  block(0,FLOOR,W,H-FLOOR,'#a66b44');block(0,FLOOR,W,12,'#6bd05d');block(0,FLOOR+11,W,6,'#2d8d52');
+  for(let yy=FLOOR+24;yy<H;yy+=30)for(let xx=0;xx<W;xx+=41){block(xx+3+(yy%2)*10,yy,17,7,'#c98c52');block(xx+30,yy+14,6,7,'#8b5535');}
+  for(let p of platforms){block(p.x-4,p.y-1,p.w+8,10,'#53b35a');block(p.x,p.y+8,p.w,24,'#bc8049');block(p.x,p.y+29,p.w,5,'#8c5934');block(p.x+5,p.y+13,p.w-10,4,'#e7ac63');for(let xx=p.x+28;xx<p.x+p.w;xx+=39){block(xx,p.y+8,4,22,'#9e5d34');block(xx-15,p.y+26,26,3,'#986138');}}
+ }
+ function mushroom(p){
+  if(p.inv&&Math.floor(p.inv/5)%2===0)return;
+  ctx.save();let move=p.ground?Math.round(Math.sin(frame*.7)*Math.min(2,Math.abs(p.vx))):0;ctx.translate(Math.round(p.x),Math.round(p.y+move));
+  block(4,26,32,15,'#ecd3b0');block(10,30,23,11,'#fff0d5');
+  block(0,18,40,11,'#622c3b');block(3,9,34,19,'#b83648');block(6,4,28,18,'#e44a55');block(14,1,12,7,'#fa7169');
+  block(5,15,10,8,'#fff3de');block(24,9,9,11,'#fff3de');block(18,4,5,5,'#fff3de');
+  block(p.face>0?19:7,30,5,8,'#272c43');block(p.face>0?28:16,30,5,8,'#272c43');
+  block(8,39,13,4,'#633d40');block(24,39,13,4,'#633d40');ctx.restore();
+ }
+ function mario(e){
+  ctx.save();ctx.translate(Math.round(e.x),Math.round(e.y));if(e.dir<0){ctx.translate(e.w,0);ctx.scale(-1,1);}
+  let a=Math.sin(e.walk)>0?2:0;
+  block(5,0,23,6,'#be3338');block(0,6,35,7,'#e54a4a');block(5,12,26,15,'#dc9b69');
+  block(0,15,10,6,'#58362e');block(19,13,5,8,'#282a34');block(18,22,16,5,'#593429');
+  block(7,27,23,9,'#de434a');block(0,30,9,10,'#f04b4f');block(28,30,7,9,'#f04b4f');
+  block(8,34,21,11,'#3764bd');block(12,29,5,13,'#2d5cb0');block(24,29,5,13,'#2d5cb0');
+  block(11,34,5,5,'#f8e489');block(25,34,5,5,'#f8e489');block(5,41+a,14,8,'#643e38');block(21,41+2-a,13,8,'#643e38');ctx.restore();
+ }
+ function draw(){
+  ctx.save();if(shake)ctx.translate(Math.round(Math.sin(frame*14)*shake*.45),Math.round(Math.cos(frame*9)*shake*.28));
+  background();for(let e of enemies)mario(e);if(player)mushroom(player);
+  for(let p of particles){ctx.globalAlpha=Math.min(1,p.life/11);block(p.x,p.y,p.size,p.size,p.color);}ctx.globalAlpha=1;
+  ctx.restore();
+ }
+ function loop(now){
+  if(!last)last=now;acc+=Math.min(now-last,80);last=now;
+  let steps=0;while(acc>=1000/60&&steps<5){update();acc-=1000/60;steps++;}
+  draw();requestAnimationFrame(loop);
+ }
+ document.addEventListener('keydown',ev=>{
+  const k=ev.key.toLowerCase();if(['arrowleft','arrowright','arrowup',' ','a','d','w','p','r','enter'].includes(k))ev.preventDefault();
+  if(k==='arrowleft'||k==='a')pressed.left=true;
+  if(k==='arrowright'||k==='d')pressed.right=true;
+  if(!ev.repeat){if(k===' '||k==='arrowup'||k==='w')jump();if(k==='p')pause();if(k==='r')setup();if(k==='enter'){if(mode==='pause')pause();else if(mode!=='play')setup();}}
+ });
+ document.addEventListener('keyup',ev=>{let k=ev.key.toLowerCase();if(k==='a'||k==='arrowleft')pressed.left=false;if(k==='d'||k==='arrowright')pressed.right=false;});
+ window.addEventListener('blur',()=>{pressed.left=pressed.right=false;if(mode==='play')pause();});
+ function bind(id,action){const el=$(id);el.addEventListener('pointerdown',ev=>{ev.preventDefault();el.setPointerCapture(ev.pointerId);el.classList.add('down');if(action==='jump')jump();else pressed[action]=true;});for(let event of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(event,()=>{el.classList.remove('down');if(action!=='jump')pressed[action]=false;});}
+ bind('left','left');bind('right','right');bind('jump','jump');
+ $('start').addEventListener('click',()=>{if(mode==='pause')pause();else setup();});
+ $('pause').addEventListener('click',pause);
+ hud();requestAnimationFrame(loop);
+ window.__mushroomGame={getState:()=>({mode,score,lives,seconds,player:{...player},enemies:enemies.length}),start:setup,jump};
+})();
+</script>
+</body>
+</html>
