@@ -38,20 +38,35 @@
   .language-switch button[aria-pressed="true"]{background:#ffdc63;color:#302b39}
   .help{text-align:center;color:#bbc4dd;font-size:max(12px,.85vw);line-height:1.5;margin:18px auto 0}
   .support-project::after{font-size:max(13px,.9vw)}
-  .orientation-gate{display:none;position:fixed;inset:0;z-index:30;align-items:center;justify-content:center;flex-direction:column;gap:15px;padding:30px;text-align:center;background:#151a2e;color:#f9f6ea}
-  .orientation-gate h2{margin:0;color:#ffdc63;font-size:clamp(24px,7vw,38px)}
-  .orientation-gate p{margin:0;max-width:350px;font-size:16px;line-height:1.5}
-  .orientation-gate button{border:0;border-radius:8px;background:#ffdc63;color:#242038;font-weight:bold;padding:15px 20px;font-size:17px;min-height:52px}
-  .orientation-symbol{font-size:54px;line-height:1}
-  @media(max-width:900px) and (orientation:portrait) and (pointer:coarse){
-    .orientation-gate{display:flex}
-    body{overflow:hidden}
+
+  .thumbstick{display:none;position:relative;width:148px;height:76px;border:2px solid #63789b;border-radius:40px;background:linear-gradient(90deg,#2b3857,#415272,#2b3857);touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab;box-sizing:border-box}
+  .thumbstick:before{content:"◀";position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:#a3b4d6}
+  .thumbstick:after{content:"▶";position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;color:#a3b4d6}
+  .thumbstick-knob{position:absolute;left:50%;top:50%;width:54px;height:54px;transform:translate(calc(-50% + var(--stick-x,0px)),-50%);border:3px solid #c7d6eb;border-radius:50%;box-shadow:0 3px 8px #090f2388;background:radial-gradient(circle at 38% 30%,#879cbe,#52698e 74%);pointer-events:none;box-sizing:border-box}
+  .thumbstick.active{border-color:#ffdc63;cursor:grabbing}
+  .dpad-buttons{display:flex;gap:10px}
+  @media(pointer:coarse){.dpad-buttons{display:none}.thumbstick{display:block}.controls{min-height:90px}.key.jump{min-height:64px}}
+  @media(max-width:700px) and (orientation:portrait){
+    body{align-items:flex-start;padding:7px}
+    .wrap{width:100%}
+    header{padding:8px;gap:7px}
+    h1{font-size:clamp(12px,3.7vw,19px)}
+    .stats{order:3;width:100%;justify-content:space-between;font-size:clamp(11px,3vw,14px)}
+    .controls{padding:8px;gap:6px}
+    .thumbstick{width:135px;height:72px}
+    .key.jump{min-height:62px;width:clamp(95px,30vw,145px)}
+    .sub{padding:8px 6px;font-size:11px}
+    .set{gap:7px}
+    .help{margin-top:12px;font-size:11px}
+    .support-project-wrap{padding:12px 8px}
   }
   @media(max-width:900px) and (orientation:landscape) and (pointer:coarse), (max-height:520px) and (orientation:landscape){
     body{align-items:flex-start;padding:4px}
     .wrap{width:98vw;width:min(98vw,calc((100dvh - 119px)*1.777778))}
     header{padding:5px 10px;gap:8px}
     .controls{padding:5px 10px}
+    .thumbstick{width:145px;height:64px}
+    .thumbstick-knob{width:49px;height:49px}
     .key{height:48px;width:58px}
     .key.jump{width:120px}
     .sub{padding:8px;font-size:11px}
@@ -81,19 +96,13 @@
    </div>
   </div>
   <div class="controls">
-   <div class="set"><button type="button" class="key" id="left" aria-label="Move left">◀</button><button type="button" class="key" id="right" aria-label="Move right">▶</button></div>
+   <div class="set"><div class="dpad-buttons"><button type="button" class="key" id="left" aria-label="Move left">◀</button><button type="button" class="key" id="right" aria-label="Move right">▶</button></div><div class="thumbstick" id="thumbstick" role="slider" tabindex="0" aria-label="Move mushroom" aria-valuemin="-100" aria-valuemax="100" aria-valuenow="0" aria-orientation="horizontal"><div class="thumbstick-knob"></div></div></div>
    <div class="set"><button type="button" class="sub" id="pause">Ⅱ PAUSE</button><button type="button" class="key jump" id="jump">▲ JUMP</button></div>
   </div>
  </section>
  <p class="help" id="help">A / D or ← / → — move · Space / ↑ / W — jump · P — pause · R — restart</p>
  <div class="support-project-wrap"><a class="support-project" href="../go/kofi/mushroom-revenge/" target="_blank" rel="noopener noreferrer">Support this project ↗</a></div>
 </main>
-<div class="orientation-gate" id="orientation-gate" role="dialog" aria-labelledby="orientation-heading">
- <div class="orientation-symbol" aria-hidden="true">▭</div>
- <h2 id="orientation-heading">LANDSCAPE MODE</h2>
- <p id="orientation-message">Turn your phone sideways to play. You can also try automatic rotation.</p>
- <button type="button" id="orientation-button">PLAY LANDSCAPE ▶</button>
-</div>
 <script>
 'use strict';
 (()=>{
@@ -102,7 +111,7 @@
   en:{
    title:'Mushroom vs. Mario — Mini Game',gameTitle:'🍄 MUSHROOM VS. MARIO',
    gameLabel:'Mushroom vs. Mario game',canvasLabel:'Pixel-art platform game',
-   languageLabel:'Language',leftLabel:'Move left',rightLabel:'Move right',
+   languageLabel:'Language',leftLabel:'Move left',rightLabel:'Move right',stickLabel:'Move mushroom',
    scoreLabel:'MARIO',livesLabel:'LIVES',timeLabel:'TIME',
    introTitle:'MUSHROOM REVENGE',
    introMessage:'Mario spent his life stomping mushrooms.<br>Today <strong>the mushroom stomps Mario</strong>.<br>Stomp 10 Marios in 90 seconds!<br>They hurt from the side, but not from above.',
@@ -112,13 +121,12 @@
    continue:'CONTINUE ▶',wonTitle:'MUSHROOMS WIN!',
    wonMessage:'You stomped every Mario!<br><strong>The Mushroom Kingdom is free.</strong>',
    lostTitle:'MARIO WINS',lostMessage:(n)=>'You stomped <strong>'+n+'</strong> Marios.<br>Time for a rematch.',
-   retry:'PLAY AGAIN ↻',
-   rotateTitle:'LANDSCAPE MODE',rotateMessage:'Turn your phone sideways to play. You can also try automatic rotation.',rotateButton:'PLAY LANDSCAPE ▶',rotateManual:'Please rotate your phone sideways. This browser cannot rotate the screen automatically.'
+   retry:'PLAY AGAIN ↻'
   },
   ru:{
    title:'Грибок против Марио — мини-игра',gameTitle:'🍄 ГРИБОК ПРОТИВ МАРИО',
    gameLabel:'Игра Грибок против Марио',canvasLabel:'Пиксельная платформенная игра',
-   languageLabel:'Язык',leftLabel:'Влево',rightLabel:'Вправо',
+   languageLabel:'Язык',leftLabel:'Влево',rightLabel:'Вправо',stickLabel:'Движение грибка',
    scoreLabel:'МАРИО',livesLabel:'ЖИЗНИ',timeLabel:'ВРЕМЯ',
    introTitle:'МЕСТЬ ГРИБКА',
    introMessage:'Марио всю жизнь прыгал на грибов.<br>Сегодня <strong>гриб прыгает на Марио</strong>.<br>Растопчи 10 Марио за 90 секунд!<br>Сбоку они опасны, сверху — нет.',
@@ -128,8 +136,7 @@
    continue:'ПРОДОЛЖИТЬ ▶',wonTitle:'ГРИБЫ ПОБЕДИЛИ!',
    wonMessage:'Ты растоптал всех Марио!<br><strong>Грибное королевство свободно.</strong>',
    lostTitle:'МАРИО ПОБЕДИЛ',lostMessage:(n)=>'Тебе удалось растоптать Марио: <strong>'+n+'</strong>.<br>Пора взять реванш.',
-   retry:'ИГРАТЬ ЕЩЁ ↻',
-   rotateTitle:'ГОРИЗОНТАЛЬНЫЙ РЕЖИМ',rotateMessage:'Поверни телефон горизонтально для игры. Можно попробовать автоматический поворот.',rotateButton:'ИГРАТЬ ГОРИЗОНТАЛЬНО ▶',rotateManual:'Поверни телефон горизонтально вручную: браузер не разрешил автоматический поворот.'
+   retry:'ИГРАТЬ ЕЩЁ ↻'
   }
  };
  // Explicit ?lang= override > manual preference > the primary browser locale.
@@ -162,15 +169,13 @@
   document.querySelectorAll('[data-lang]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.lang===locale)));
   $('left').setAttribute('aria-label',t.leftLabel);
   $('right').setAttribute('aria-label',t.rightLabel);
+  $('thumbstick').setAttribute('aria-label',t.stickLabel);
   $('score-label').textContent=t.scoreLabel;
   $('lives-label').textContent=t.livesLabel;
   $('time-label').textContent=t.timeLabel;
   $('pause').textContent=mode==='pause'?t.resume:t.pause;
   $('jump').textContent=t.jump;
   $('help').textContent=t.help;
-  $('orientation-heading').textContent=t.rotateTitle;
-  $('orientation-message').textContent=t.rotateMessage;
-  $('orientation-button').textContent=t.rotateButton;
   renderOverlay();
  }
  function setLanguage(lang){
@@ -186,6 +191,45 @@
  const platforms=[{x:151,y:360,w:177},{x:415,y:293,w:181},{x:718,y:356,w:168}];
  const lanes=[{min:65,max:350,y:FLOOR},{min:384,max:890,y:FLOOR},{min:160,max:314,y:360},{min:423,max:582,y:293},{min:728,max:870,y:356}];
  const pressed={left:false,right:false};
+ const stick=$('thumbstick');
+ let stickValue=0,stickPointer=null;
+ function inputX(){return Number(pressed.right)-Number(pressed.left)||stickValue;}
+ function setStick(value){
+  stickValue=Math.abs(value)<.13?0:Math.max(-1,Math.min(1,value));
+  const rect=stick.getBoundingClientRect();
+  const travel=Math.max(20,(rect.width-54)/2-8);
+  stick.style.setProperty('--stick-x',Math.round(stickValue*travel)+'px');
+  stick.setAttribute('aria-valuenow',String(Math.round(stickValue*100)));
+ }
+ function releaseStick(pointerId){
+  if(stickPointer===null||(pointerId!==undefined&&pointerId!==stickPointer))return;
+  stickPointer=null;stick.classList.remove('active');setStick(0);
+ }
+ function moveStick(e){
+  const rect=stick.getBoundingClientRect();
+  const radius=Math.max(24,(rect.width-54)/2-8);
+  setStick((e.clientX-(rect.left+rect.width/2))/radius);
+ }
+ stick.addEventListener('pointerdown',e=>{
+  if(stickPointer!==null)return;
+  e.preventDefault();stickPointer=e.pointerId;
+  if(stick.setPointerCapture)stick.setPointerCapture(e.pointerId);
+  stick.classList.add('active');moveStick(e);
+ });
+ stick.addEventListener('pointermove',e=>{
+  if(e.pointerId!==stickPointer)return;
+  e.preventDefault();moveStick(e);
+ });
+ for(const event of ['pointerup','pointercancel','lostpointercapture'])
+  stick.addEventListener(event,e=>releaseStick(e.pointerId));
+ stick.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();setStick(e.key==='ArrowLeft'?-1:1);}
+ });
+ stick.addEventListener('keyup',e=>{
+  if(e.key==='ArrowLeft'||e.key==='ArrowRight')setStick(0);
+ });
+ stick.addEventListener('blur',()=>releaseStick());
+
  let mode='intro',player,enemies=[],particles=[],score=0,lives=3,seconds=90,frame=0,shake=0,respawnTick=0,last=0,acc=0;
  let actx=null;
  function beep(f=470,d=.1){
@@ -197,11 +241,11 @@
   player={x:80,y:FLOOR-43,w:39,h:43,vx:0,vy:0,ground:true,coyote:6,face:1,inv:0};
   enemies=[makeMario(0,295),makeMario(1,660),makeMario(3,515)];
   particles=[];score=0;lives=3;seconds=90;frame=0;shake=0;respawnTick=0;pressed.left=pressed.right=false;
-  mode='play';$('overlay').classList.add('hidden');$('pause').textContent=tr().pause;hud();beep(600,.13);
+  mode='play';releaseStick();$('overlay').classList.add('hidden');$('pause').textContent=tr().pause;hud();beep(600,.13);
  }
  function dialog(title,content,btn){$('heading').textContent=title;$('message').innerHTML=content;$('start').textContent=btn;$('overlay').classList.remove('hidden');}
  function finish(win){mode=win?'won':'lost';renderOverlay();beep(win?850:155,.32);}
- function pause(){if(mode==='play'){mode='pause';pressed.left=pressed.right=false;renderOverlay();$('pause').textContent=tr().resume;}else if(mode==='pause'){mode='play';$('overlay').classList.add('hidden');$('pause').textContent=tr().pause;}}
+ function pause(){if(mode==='play'){mode='pause';pressed.left=pressed.right=false;releaseStick();renderOverlay();$('pause').textContent=tr().resume;}else if(mode==='pause'){mode='play';$('overlay').classList.add('hidden');$('pause').textContent=tr().pause;}}
  function jump(){if(mode==='intro'||mode==='lost'||mode==='won'){setup();return;}if(mode==='pause'){pause();return;}if(mode!=='play')return;if(player.ground||player.coyote>0){player.vy=-15.9;player.ground=false;player.coyote=0;dust(player.x+20,player.y+40,'#fff1b6',7,2.6);beep(420,.10);}}
  function dust(x,y,color,n=12,power=5){for(let k=0;k<n;k++){let a=Math.random()*Math.PI*2,v=.5+Math.random()*power;particles.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1.3,life:18+Math.random()*18,max:36,color,size:2+Math.random()*5});}}
  function damage(){if(player.inv>0||mode!=='play')return;lives--;player.inv=95;player.vy=-9;player.vx=player.x<480?-5:5;shake=11;dust(player.x+19,player.y+20,'#fff080',17,6);beep(180,.24);hud();if(lives<=0)finish(false);}
@@ -210,7 +254,7 @@
   frame++;seconds=Math.max(0,seconds-1/60);if(seconds<=0){finish(false);return;}
   if(player.inv>0)player.inv--;if(shake>0)shake--;
   const oldFeet=player.y+player.h,wasGround=player.ground;
-  let dir=Number(pressed.right)-Number(pressed.left);
+  let dir=inputX();
   if(dir){player.vx+=(dir*5.1-player.vx)*.32;player.face=dir;}else player.vx*=player.ground?.72:.88;
   player.x=Math.max(0,Math.min(W-player.w,player.x+player.vx));
   player.vy=Math.min(15,player.vy+.66);player.y+=player.vy;player.ground=false;
@@ -299,33 +343,25 @@
   if(!ev.repeat){if(k===' '||k==='arrowup'||k==='w')jump();if(k==='p')pause();if(k==='r')setup();if(k==='enter'){if(mode==='pause')pause();else if(mode!=='play')setup();}}
  });
  document.addEventListener('keyup',ev=>{let k=ev.key.toLowerCase();if(k==='a'||k==='arrowleft')pressed.left=false;if(k==='d'||k==='arrowright')pressed.right=false;});
- window.addEventListener('blur',()=>{pressed.left=pressed.right=false;if(mode==='play')pause();});
+ window.addEventListener('blur',()=>{pressed.left=pressed.right=false;releaseStick();if(mode==='play')pause();});
  function bind(id,action){const el=$(id);el.addEventListener('pointerdown',ev=>{ev.preventDefault();el.setPointerCapture(ev.pointerId);el.classList.add('down');if(action==='jump')jump();else pressed[action]=true;});for(let event of ['pointerup','pointercancel','lostpointercapture'])el.addEventListener(event,()=>{el.classList.remove('down');if(action!=='jump')pressed[action]=false;});}
  bind('left','left');bind('right','right');bind('jump','jump');
- $('start').addEventListener('click',()=>{if(mode==='pause')pause();else setup();});
+ $('start').addEventListener('click',()=>{void tryAutoLandscape();if(mode==='pause')pause();else setup();});
  $('pause').addEventListener('click',pause);
- // Orientation locking requires a user gesture and is not available in all mobile browsers.
- // If it is unsupported, the landscape-only prompt remains visible until rotation.
- async function requestLandscape(){
+ // Try landscape after Start is tapped. No extra screen or blocking if unavailable.
+ async function tryAutoLandscape(){
+  if(!window.matchMedia||!window.matchMedia('(orientation: portrait) and (pointer: coarse)').matches)return false;
   const orientation=window.screen&&window.screen.orientation;
-  if(!orientation||typeof orientation.lock!=='function'){
-   $('orientation-message').textContent=tr().rotateManual;
-   return false;
-  }
+  if(!orientation||typeof orientation.lock!=='function')return false;
   try{
-   if(!document.fullscreenElement&&document.documentElement.requestFullscreen){
-    try{await document.documentElement.requestFullscreen();}catch{}
-   }
+   if(!document.fullscreenElement&&document.documentElement.requestFullscreen)
+    await document.documentElement.requestFullscreen();
    await orientation.lock('landscape');
    return true;
-  }catch{
-   $('orientation-message').textContent=tr().rotateManual;
-   return false;
-  }
+  }catch{return false;}
  }
- $('orientation-button').addEventListener('click',requestLandscape);
  applyLanguage();hud();requestAnimationFrame(loop);
- window.__mushroomGame={getState:()=>({mode,score,lives,seconds,locale,player:player?{...player}:null,enemies:enemies.length}),start:setup,jump,setLanguage,requestLandscape};
+ window.__mushroomGame={getState:()=>({mode,score,lives,seconds,locale,stickValue,input:inputX(),player:player?{...player}:null,enemies:enemies.length}),start:setup,jump,setLanguage,tryAutoLandscape};
 })();
 </script>
 </body>
