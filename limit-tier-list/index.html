@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="../support.css">
 <script src="../analytics.js"></script>
 <script src="theorems.js"></script>
-<script src="theorem-math.js"></script>
+<script src="theorem-math.js?v=2"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
 <style>
@@ -40,10 +40,12 @@ button,a{touch-action:manipulation}button{font:inherit;color:inherit;cursor:poin
 #detail .detail-text{font-size:15px;line-height:1.7;overflow-wrap:break-word}
 #detail .statement{padding:13px 14px;background:#2d2d2d;border-left:3px solid #b6b6b6;border-radius:0 4px 4px 0}
 #detail .formula{display:block;max-width:100%;overflow-x:auto;overflow-y:hidden;padding:4px 0;scrollbar-width:thin;scrollbar-color:#666 transparent}
-#detail .katex-display{margin:.5em 0}
+#detail .katex-display{margin:.5em 0;display:flex;justify-content:safe center}
+#detail .katex-display>.katex{flex:0 0 auto}
 #detail .katex{font-size:1.1em}
 #detail .inline-math{display:inline-block;max-width:100%;vertical-align:baseline}
 #detail .inline-math>.katex{white-space:normal}
+#detail .inline-math{overflow-wrap:normal}
 #detail .detail-text .formula+.formula{padding-top:0}
 #detailMoves{flex-shrink:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr)) minmax(92px,1.6fr);gap:6px;margin:0;padding:12px 18px 16px;background:#222;border-top:1px solid #414141}
 #detailMoves .move{min-width:0;padding:8px 4px;font-size:14px}
