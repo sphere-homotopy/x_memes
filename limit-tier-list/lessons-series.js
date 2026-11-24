@@ -21,39 +21,39 @@ Object.assign(window.THEOREM_LESSONS, {
   },
   "moore": {
     "title": "Exchange two approximation parameters",
-    "goal": "Determine whether the order of limits matters for $$a_{mn}=\\frac{n}{n+1}+\\frac{\\sin(mn)}m,$$ where $m,n$ are positive integers. The second term oscillates with $n$, so direct application of Moore–Osgood requires care.",
+    "goal": "Evaluate both iterated limits and the joint limit of $$a_{mn}=\\frac{n}{n+1}+\\frac{\\sin(mn)}{m(n+1)},$$ for positive integers $m,n$. Can the oscillating term make the answer depend on the order of approximation?",
     "steps": [
       [
-        "Choose a version with both inner limits",
-        "For fixed $n$, $a_{mn}\\to b_n=n/(n+1)$, uniformly in $n$, since $|a_{mn}-b_n|\\le1/m$. But for fixed $m$, the sine term need not converge as $n\\to\\infty$. Thus this array does not satisfy the theorem as stated. Replace the oscillation by a decaying factor and study $$A_{mn}=\\frac{n}{n+1}+\\frac{\\sin(mn)}{m(n+1)}.$$"
+        "Find the first inner limit",
+        "For fixed $n$, the oscillatory term has magnitude at most $1/[m(n+1)]$, which tends to zero. Hence $$b_n=\\lim_{m\\to\\infty}a_{mn}=\\frac n{n+1}.$$"
       ],
       [
-        "Verify both hypotheses",
-        "For fixed $n$, $A_{mn}\\to b_n=n/(n+1)$, with $$\\sup_n|A_{mn}-b_n|\\le\\frac1m\\to0.$$ For each fixed $m$, $A_{mn}\\to c_m=1$ as $n\\to\\infty$, since the sine term is bounded by $1/[m(n+1)]$."
+        "Verify uniformity and the other inner limit",
+        "The bound holds for every $n$, so $$\\sup_n|a_{mn}-b_n|\\le\\frac1m\\to0.$$ For each fixed $m$, the sine term also tends to zero as $n\\to\\infty$, while $n/(n+1)\\to1$. Thus $c_m=\\lim_{n\\to\\infty}a_{mn}=1$."
       ],
       [
-        "Exchange the limits",
-        "Moore–Osgood gives $$\\lim_m\\lim_n A_{mn}=\\lim_n\\lim_m A_{mn}$$ $$=\\lim_{m,n\\to\\infty}A_{mn}=1.$$ In particular the same result holds along any sequence $(m_j,n_j)$ tending jointly to infinity."
+        "Invoke Moore–Osgood",
+        "Both hypotheses are now verified. The theorem gives $$\\lim_m\\lim_n a_{mn}=\\lim_n\\lim_m a_{mn}$$ $$=\\lim_{m,n\\to\\infty}a_{mn}=1.$$ In particular, the same result holds along any sequence $(m_j,n_j)$ tending jointly to infinity."
       ]
     ],
     "why": "Without uniformity, $a_{mn}=m/(m+n)$ has iterated limits $0$ and $1$. Along $m=n$ the joint value is $1/2$. Along $m=n^2$ it tends to $1$. Knowing both inner limits exist does not control the diagonal.",
     "intuition": "Imagine a grid of values. Uniform convergence means that once a row index is large enough, every column is close to its limiting value. This prevents a diagonal path through exceptional entries from changing the answer."
   },
   "leibniz": {
-    "title": "Evaluate a logarithmic integral by differentiating a parameter",
-    "goal": "For $t>-1$, compute $$F(t)=\\int_0^1\\frac{\\log(1+tx)}x\\,dx.$$ Direct evaluation leads to a special function. Differentiating with respect to $t$ turns the problem into an elementary integral.",
+    "title": "Compute a Dirichlet-type integral using a parameter",
+    "goal": "Evaluate, for real $t$, $$F(t)=\\int_0^\\infty e^{-x}\\frac{\\sin(tx)}x\\,dx.$$ Direct integration is awkward. Introducing the parameter $t$ lets us remove the denominator by differentiation.",
     "steps": [
       [
-        "Set up the derivative and check measurability",
-        "For $0<x\\le1$, put $f(t,x)=\\log(1+tx)/x$. It is continuous in $x$ there, and differentiable in $t>-1$, with $$\\partial_t f(t,x)=\\frac1{1+tx}.$$ At $t_0=0$, $f(0,x)=0$ is integrable."
+        "Check the function and its derivative",
+        "For $x>0$, set $f(t,x)=e^{-x}\\sin(tx)/x$. It is continuous in $x$ and differentiable in $t$ for every $x>0$. At $t=0$, $f(0,x)=0$ is integrable. Also $$\\partial_t f(t,x)=e^{-x}\\cos(tx).$$"
       ],
       [
-        "Check a common local envelope",
-        "Fix any $T\\in(-1,\\infty)$ and choose an open bounded interval $I$ containing both $0$ and $T$, with lower endpoint $a>-1$. For $t\\in I$, $1+tx\\ge\\min(1,1+a)>0$. Hence $|\\partial_t f|\\le1/\\min(1,1+a)$, an integrable constant on $(0,1)$."
+        "Find a common derivative envelope",
+        "For every real $t$ and $x>0$, $$|\\partial_t f(t,x)|\\le e^{-x}.$$ The envelope is integrable on $(0,\\infty)$ with integral one. All the hypotheses of differentiation under the integral sign hold on $I=\\mathbb R$."
       ],
       [
-        "Differentiate under the integral",
-        "The Leibniz/DCT rule now justifies $$F'(t)=\\int_0^1\\frac1{1+tx}\\,dx$$ $$=\\begin{cases}\\log(1+t)/t,&t\\ne0,\\\\1,&t=0.\\end{cases}$$ Since $F(0)=0$, we recover $$F(t)=\\int_0^t\\frac{\\log(1+s)}s\\,ds.$$ The integrand at $s=0$ is understood by its continuous extension. This identifies the original function by its elementary derivative."
+        "Differentiate, evaluate, then integrate back",
+        "The Leibniz rule gives $$F'(t)=\\int_0^\\infty e^{-x}\\cos(tx)\\,dx.$$ Using the real part of the elementary exponential integral, $$F'(t)=\\operatorname{Re}\\frac1{1-it}=\\frac1{1+t^2}.$$ Since $F(0)=0$, the fundamental theorem of calculus yields $$F(t)=\\int_0^t\\frac{ds}{1+s^2}=\\arctan t.$$ In particular the original integral at $t=1$ equals $\\pi/4$."
       ]
     ],
     "why": "A pointwise derivative under the integral is not enough. Let $F(t)=\\int_0^1 t^{-1}\\mathbf1_{(0,t)}(x)\\,dx$ for $0<t<1$, and define $f(0,x)=0$. For each fixed $x>0$, $f(t,x)$ vanishes near zero and has right derivative zero there. Yet $F(t)=1$ for $t>0$ and $F(0)=0$, so $F$ is not even continuous at zero.",
@@ -176,7 +176,7 @@ Object.assign(window.THEOREM_LESSONS, {
         "Mertens' theorem licenses the triangular grouping: $$\\sum_{n=0}^\\infty c_n=AB=2\\log2.$$ We cannot simply claim all double terms are absolutely summable: their absolute sum is infinite. Mertens is stronger here than the absolute rearrangement argument."
       ]
     ],
-    "why": "If both factors are only conditionally convergent, the conclusion may fail. Take $a_n=b_n=(-1)^n/\\sqrt{n+1}$. Both series converge, but $$|c_n|=\\sum_{k=0}^n\\frac1{\\sqrt{(k+1)(n-k+1)}}$$ $$\\ge\\frac{2(n+1)}{n+2}\\to2.$$ The product terms do not tend to zero.",
+    "why": "If both factors are only conditionally convergent, the conclusion may fail. Take $a_n=b_n=(-1)^n/\\sqrt{n+1}$. Both series converge, but $$|c_n|=\\sum_{k=0}^n\\frac1{\\sqrt{(k+1)(n-k+1)}}$$ $\\ge\\frac{2(n+1)}{n+2}.$ The lower bound tends to $2$. The product terms do not tend to zero.",
     "intuition": "The triangular partial sums combine one sequence with partial sums of the other. The absolutely summable factor acts as a stable set of weights; the other factor only needs bounded partial sums converging to its sum."
   }
 });
