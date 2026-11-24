@@ -93,8 +93,8 @@ body.reader-open{overflow:hidden;overscroll-behavior:none}
 </head>
 <body>
 <main>
-<header><div class="eyebrow">Analysis · Make your own ranking <span class="build-number">· Edition 5</span></div><h1>The Ultimate Limit Interchange Tier List</h1><p class="muted">Which theorem deserves S tier? Rank by power, elegance, usefulness, or pure personal bias.</p></header>
-<div class="toolbar"><button class="tool primary" id="share">Copy ranking link</button><button class="tool" id="png">Download PNG</button><button class="tool" id="tweet">Share on X</button><button class="tool" id="undo" disabled>Undo</button><button class="tool" id="reset">Reset</button></div>
+<header><div class="eyebrow">Analysis · Make your own ranking <span class="build-number">· Edition 5.1</span></div><h1>The Ultimate Limit Interchange Tier List</h1><p class="muted">Which theorem deserves S tier? Rank by power, elegance, usefulness, or pure personal bias.</p></header>
+<div class="toolbar"><button class="tool primary" id="share">Copy ranking link</button><button class="tool" id="png">Download PNG</button><button class="tool" id="tweet" title="Download your ranking image and open a short X post">Share on X</button><button class="tool" id="undo" disabled>Undo</button><button class="tool" id="reset">Reset</button></div>
 <div class="status" id="status" role="status" aria-live="polite"></div>
 <div id="board" aria-label="Tier list"></div>
 <p class="instructions">Drag cards into tiers, or select a card and tap a tier. Hover over a theorem for its statement, proof and intuition; tap a card on touchscreens to read and rank it.</p>
@@ -191,9 +191,41 @@ function show(id,pin,origin){if(!pin&&pinned)return;clearTimeout(hideTimer);clea
 function close(){clearTimeout(hoverTimer);clearTimeout(hideTimer);const was=pinned;document.body.classList.remove("reader-open");pinned=false;current=null;$("detail").hidden=true;$("backdrop").hidden=true;if(was&&opener?.isConnected)opener.focus()}
 $("detail").addEventListener("pointerenter",()=>clearTimeout(hideTimer));$("detail").addEventListener("pointerleave",()=>{if(!pinned)hideTimer=setTimeout(close,400)});$("closeDetail").onclick=close;$("backdrop").onclick=close;document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(current)close();else if(selected){selected=null;render()}}if(e.key==="Tab"&&pinned){const buttons=[...$("detail").querySelectorAll("button")];if(e.shiftKey&&document.activeElement===buttons[0]){e.preventDefault();buttons.at(-1).focus()}else if(!e.shiftKey&&document.activeElement===buttons.at(-1)){e.preventDefault();buttons[0].focus()}}});
 $("cancelSelect").onclick=()=>{selected=null;render()};$("undo").onclick=()=>{if(history.length){restore(history.pop());selected=null;persist();render();announce("Move undone.")}};$("reset").onclick=()=>{if(state.U.length===T.length)return;if(!confirm("Return every theorem to the unranked tray?"))return;checkpoint();state=Object.fromEntries(all.map(k=>[k,k==="U"?T.map(t=>t[0]):[]]));selected=null;persist();render();announce("All theorems reset.")};
-$("share").onclick=async()=>{const url=shareUrl();try{await navigator.clipboard.writeText(url);announce("Ranking link copied. Anyone can open and edit a copy.")}catch{window.prompt("Copy this ranking link:",url)}};$("tweet").onclick=()=>{const text="My limit interchange theorem tier list. Make your own ranking:";window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(text)+"&url="+encodeURIComponent(shareUrl()),"_blank","noopener,noreferrer")};
+$("share").onclick=async()=>{const url=shareUrl();try{await navigator.clipboard.writeText(url);announce("Ranking link copied. Anyone can open and edit a copy.")}catch{window.prompt("Copy this ranking link:",url)}};// Public tweets promote the reusable template, not a serialized private ranking.
+// X's web intent has no parameter for uploading an image.
+const publicTierListUrl="https://sphere-homotopy.github.io/x_memes/limit-tier-list/";
+function buildTweet(){
+  const ranked=T.length-state.U.length;
+  const challenge="Make your own theorem tier list:";
+  if(!ranked)return "Which limit interchange theorem deserves S tier?\n\n"+challenge;
+  const best=tiers.find(t=>state[t].length);
+  const names=state[best].map(id=>lookup.get(id)[1]);
+  const intro="My limit interchange theorem tier list:";
+  const tail="\n\n"+challenge;
+  // Leave ample room for X's fixed-length URL and line breaks.
+  const budget=240;
+  let shown=[];
+  for(const name of names){
+    const next=[...shown,name];
+    const remaining=names.length-next.length;
+    const line=best+" tier: "+next.join(", ")+(remaining?" +"+remaining+" more":"");
+    if(Array.from(intro+"\n"+line+tail).length>budget)break;
+    shown=next;
+  }
+  const omitted=names.length-shown.length;
+  const line=best+" tier: "+(shown.length?shown.join(", ")+(omitted?" +"+omitted+" more":""):names.length+" theorems");
+  return intro+"\n"+line+tail;
+}
+function tweetIntent(){return "https://twitter.com/intent/tweet?text="+encodeURIComponent(buildTweet())+"&url="+encodeURIComponent(publicTierListUrl)}
+$("tweet").onclick=()=>{
+  if(state.U.length<T.length){
+    $("png").click();
+    announce("Your tier list image is downloading. Attach it to the X post in the composer.");
+  }
+  window.open(tweetIntent(),"_blank","noopener,noreferrer");
+};
 function wrapText(ctx,txt,width){const words=txt.split(" "),lines=[];let line="";for(const w of words){if(line&&ctx.measureText(line+" "+w).width>width){lines.push(line);line=w}else line+=(line?" ":"")+w}if(line)lines.push(line);return lines}
-$("png").onclick=()=>{const c=document.createElement("canvas"),w=1400,label=110,pad=20,cardW=198,cardH=88,gap=5,cols=6;const groups=state.U.length?[...tiers,"U"]:tiers;const heights=groups.map(k=>Math.max(100,Math.ceil(state[k].length/cols)*(cardH+gap)+10));c.width=w;c.height=120+heights.reduce((a,b)=>a+b,0)+45;const ctx=c.getContext("2d");ctx.fillStyle="#141414";ctx.fillRect(0,0,w,c.height);ctx.fillStyle="#fff";ctx.font="bold 39px system-ui";ctx.fillText("The Ultimate Limit Interchange Tier List",pad,53);ctx.fillStyle="#bbb";ctx.font="21px system-ui";ctx.fillText((T.length-state.U.length)+" / "+T.length+" ranked · Make your own at sphere-homotopy.github.io/x_memes/limit-tier-list/",pad,88);let y=110;groups.forEach((k,i)=>{const h=heights[i];ctx.fillStyle="#252525";ctx.fillRect(pad+label,y,w-pad*2-label,h-2);ctx.fillStyle=k==="U"?"#777":colors[i];ctx.fillRect(pad,y,label-2,h-2);ctx.fillStyle="#111";ctx.font=k==="U"?"bold 17px system-ui":"bold 40px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(k==="U"?"Unranked":k,pad+label/2,y+h/2);state[k].forEach((id,j)=>{const t=lookup.get(id),x=pad+label+5+j%cols*(cardW+gap),cy=y+5+Math.floor(j/cols)*(cardH+gap);ctx.fillStyle="#e8e6e1";ctx.fillRect(x,cy,cardW,cardH);ctx.fillStyle="#151515";ctx.font="bold 17px system-ui";const lines=wrapText(ctx,t[1],cardW-12);lines.forEach((l,k2)=>ctx.fillText(l,x+cardW/2,cy+24+k2*20));ctx.font="14px Georgia";ctx.fillStyle="#555";ctx.fillText(t[2],x+cardW/2,cy+73)});y+=h});ctx.textAlign="left";ctx.textBaseline="alphabetic";ctx.font="16px system-ui";ctx.fillStyle="#aaa";ctx.fillText("Rank by usefulness, elegance or personal bias. @sphere_homotopy",pad,y+28);c.toBlob(blob=>{if(!blob){announce("Could not export image.");return}const url=URL.createObjectURL(blob),a=el("a");a.href=url;a.download="limit-interchange-tier-list.png";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);announce("PNG exported.")},"image/png")};
+$("png").onclick=()=>{const c=document.createElement("canvas"),w=1400,label=110,pad=20,cardW=198,cardH=88,gap=5,cols=6;const groups=state.U.length?[...tiers,"U"]:tiers;const heights=groups.map(k=>Math.max(100,Math.ceil(state[k].length/cols)*(cardH+gap)+10));c.width=w;c.height=120+heights.reduce((a,b)=>a+b,0)+45;const ctx=c.getContext("2d");ctx.fillStyle="#141414";ctx.fillRect(0,0,w,c.height);ctx.fillStyle="#fff";ctx.font="bold 39px system-ui";ctx.fillText("The Ultimate Limit Interchange Tier List",pad,53);ctx.fillStyle="#bbb";ctx.font="21px system-ui";ctx.fillText((T.length-state.U.length)+" / "+T.length+" ranked · Make your own at sphere-homotopy.github.io/x_memes/limit-tier-list/",pad,88);let y=110;groups.forEach((k,i)=>{const h=heights[i];ctx.fillStyle="#252525";ctx.fillRect(pad+label,y,w-pad*2-label,h-2);ctx.fillStyle=k==="U"?"#777":colors[i];ctx.fillRect(pad,y,label-2,h-2);ctx.fillStyle="#111";ctx.font=k==="U"?"bold 17px system-ui":"bold 40px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(k==="U"?"Unranked":k,pad+label/2,y+h/2);state[k].forEach((id,j)=>{const t=lookup.get(id),x=pad+label+5+j%cols*(cardW+gap),cy=y+5+Math.floor(j/cols)*(cardH+gap);ctx.fillStyle="#e8e6e1";ctx.fillRect(x,cy,cardW,cardH);ctx.fillStyle="#151515";ctx.font="bold 17px system-ui";const lines=wrapText(ctx,t[1],cardW-12);lines.forEach((l,k2)=>ctx.fillText(l,x+cardW/2,cy+24+k2*20));ctx.font="14px Georgia";ctx.fillStyle="#555";ctx.fillText(t[2],x+cardW/2,cy+73)});y+=h});ctx.textAlign="left";ctx.textBaseline="alphabetic";ctx.font="16px system-ui";ctx.fillStyle="#aaa";ctx.fillText("Rank by usefulness, elegance or personal bias. @sphere_homotopy",pad,y+28);c.toBlob(blob=>{if(!blob){announce("Could not export image.");return}const url=URL.createObjectURL(blob),a=el("a");a.href=url;a.download="limit-interchange-tier-list.png";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);announce("PNG exported. You can attach it to your X post.")},"image/png")};
 render();
 document.addEventListener("DOMContentLoaded",()=>{if(current&&opener&&window.katex)show(current,pinned,opener)});
 </script>
