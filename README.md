@@ -6,6 +6,13 @@ The repository is intentionally lightweight: mostly static HTML/CSS/JavaScript p
 
 ## Projects
 
+### The Ultimate Limit Interchange Tier List
+
+Rank 25 theorems about limits, sums, integrals and derivatives. Explore precise statements, proof sketches, examples and visual intuition; export a PNG or share a ranking link.
+
+- **Live:** https://sphere-homotopy.github.io/x_memes/limit-tier-list/
+- **Source:** [limit-tier-list/index.html](limit-tier-list/index.html)
+
 ### Mushroom Revenge — Грибок против Марио
 
 A tiny pixel-art platformer that flips the familiar roles: play as a mushroom, jump onto Mario from above, and defeat ten Marios before time runs out.
