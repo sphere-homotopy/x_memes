@@ -11,6 +11,9 @@
 <link rel="stylesheet" href="../support.css">
 <script src="../analytics.js"></script>
 <script src="theorems.js"></script>
+<script src="theorem-math.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
 <style>
 *{box-sizing:border-box} :root{color-scheme:dark;--bg:#141414;--panel:#202020;--border:#424242;--muted:#b3b3b3}
 body{margin:0;background:var(--bg);color:#f5f5f5;font:15px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -23,6 +26,40 @@ button,a{touch-action:manipulation}button{font:inherit;color:inherit;cursor:poin
 #selection{position:sticky;bottom:8px;z-index:4;margin-top:10px;background:#252c36;border:1px solid #72baff;border-radius:6px;padding:9px;display:flex;flex-wrap:wrap;align-items:center;gap:6px}#selection[hidden]{display:none}#selection span{flex:1;min-width:120px;font-size:13px}.support-project-wrap{margin-top:18px}
 @media(max-width:600px){main{padding:19px 10px 24px}.tier{grid-template-columns:47px minmax(0,1fr);min-height:75px}.label{font-size:25px}.zone{min-height:74px;padding:3px;gap:3px}.card{width:calc((100% - 6px)/3);min-width:0;min-height:73px;padding:7px 4px 5px}.card strong{font-size:11.5px}.card .op{font-size:10px}.card .info{width:19px;height:19px;font-size:11px;right:0;top:0}.tray .card{width:calc((100% - 10px)/3)}.toolbar{gap:5px}.tool{font-size:13px;padding:8px 10px}#detail{inset:auto 0 0;width:100%;max-height:88dvh;border-radius:15px 15px 0 0;padding:20px 17px max(20px,env(safe-area-inset-bottom))}#detail h2{font-size:21px}.move{min-height:42px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+
+/* The theorem reader has independently scrollable content and fixed controls. */
+#detail{width:min(520px,calc(100vw - 36px));display:flex;flex-direction:column;overflow:hidden;padding:0;border-radius:10px;max-height:calc(100dvh - 36px)}
+#detail[hidden]{display:none}
+#detail.pinned{left:50%!important;right:auto!important;top:50%;transform:translate(-50%,-50%);width:min(650px,calc(100vw - 36px))}
+.detail-header{position:relative;flex-shrink:0;padding:20px 22px 14px;border-bottom:1px solid #414141;background:#222}
+#detail h2{font-size:clamp(21px,2.5vw,27px);line-height:1.2;margin:0;padding-right:30px;overflow-wrap:break-word}
+#detailOp{margin-top:8px;line-height:1.3;color:#bfc6cd;overflow-x:auto}
+#detailBody{overflow:auto;overscroll-behavior:contain;min-height:0;padding:18px 22px 22px;scrollbar-width:thin;scrollbar-color:#555 transparent}
+#detail h3{margin:20px 0 8px;font-size:11px;letter-spacing:.13em;color:#bbb}
+#detail h3:first-child{margin-top:0}
+#detail .detail-text{font-size:15px;line-height:1.7;overflow-wrap:break-word}
+#detail .statement{padding:13px 14px;background:#2d2d2d;border-left:3px solid #b6b6b6;border-radius:0 4px 4px 0}
+#detail .formula{display:block;max-width:100%;overflow-x:auto;overflow-y:hidden;padding:4px 0;scrollbar-width:thin;scrollbar-color:#666 transparent}
+#detail .katex-display{margin:.5em 0}
+#detail .katex{font-size:1.1em}
+#detail .inline-math{display:inline-block;max-width:100%;vertical-align:baseline}
+#detail .inline-math>.katex{white-space:normal}
+#detail .detail-text .formula+.formula{padding-top:0}
+#detailMoves{flex-shrink:0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr)) minmax(92px,1.6fr);gap:6px;margin:0;padding:12px 18px 16px;background:#222;border-top:1px solid #414141}
+#detailMoves .move{min-width:0;padding:8px 4px;font-size:14px}
+#detail .close{top:12px;right:12px;min-width:40px;min-height:40px}
+.card .op{max-width:100%;line-height:1.3}
+@media(max-width:600px){
+ #detail,#detail.pinned{inset:auto 0 0!important;transform:none;width:100%;max-height:90dvh;border-radius:15px 15px 0 0}
+ .detail-header{padding:17px 16px 12px}
+ #detailBody{padding:15px 16px 20px}
+ #detail .detail-text{font-size:15px;line-height:1.65}
+ #detail .statement{padding:10px 11px}
+ #detail .formula .katex{font-size:1.02em}
+ #detailMoves{padding:9px 12px max(12px,env(safe-area-inset-bottom));grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}
+ #detailMoves .move:last-child{grid-column:1/-1;min-height:32px}
+ #detailMoves .move{min-height:40px}
+}
 </style>
 </head>
 <body>
@@ -39,7 +76,7 @@ button,a{touch-action:manipulation}button{font:inherit;color:inherit;cursor:poin
 <div class="support-project-wrap"><a class="support-project" href="../go/kofi/limit-tier-list/" target="_blank" rel="noopener noreferrer">Support this project ↗</a></div>
 </main>
 <div id="backdrop" class="backdrop" hidden></div>
-<aside id="detail" hidden aria-labelledby="detailTitle"><button class="close" id="closeDetail" aria-label="Close theorem details">×</button><h2 id="detailTitle"></h2><div id="detailOp" class="mathline"></div><div id="detailBody"></div><div class="moves" id="detailMoves"></div></aside>
+<aside id="detail" hidden aria-labelledby="detailTitle"><header class="detail-header"><button class="close" id="closeDetail" aria-label="Close theorem details">×</button><h2 id="detailTitle"></h2><div id="detailOp" class="mathline"></div></header><div id="detailBody"></div><div class="moves" id="detailMoves" aria-label="Rank theorem"></div></aside>
 <script>
 "use strict";
 const T=window.THEOREMS, lookup=new Map(T.map(t=>[t[0],t])), tiers=["S","A","B","C","D","F"], all=[...tiers,"U"], colors=["#ff7f7f","#ffbf7f","#ffdf7f","#ffff7f","#bfff7f","#7fbfff"], $=id=>document.getElementById(id);
@@ -55,6 +92,25 @@ function persist(){try{localStorage.setItem(storeKey,snapshot())}catch{}}
 function shareUrl(){return location.origin+location.pathname+"#r="+encodeURIComponent(snapshot())}
 function announce(msg){$("status").textContent=msg}
 function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e}
+// Explicit delimiters avoid guessing at math in ordinary English text.
+function typeset(target,source,fallback){
+  target.replaceChildren();
+  if(!source||!window.katex){target.textContent=fallback;return}
+  const fragment=document.createDocumentFragment();
+  const tokens=source.split(/(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$)/g);
+  try{
+    for(const token of tokens){
+      if(!token)continue;
+      if(token.startsWith("$")){
+        const display=token.startsWith("$"),n=display?2:1;
+        const wrapper=el(display?"div":"span",display?"formula":"inline-math");
+        window.katex.render(token.slice(n,-n),wrapper,{displayMode:display,throwOnError:true,strict:"ignore",trust:false,output:"htmlAndMathml"});
+        fragment.append(wrapper);
+      }else fragment.append(document.createTextNode(token));
+    }
+    target.append(fragment);
+  }catch(error){console.warn("Theorem math rendering failed",error);target.textContent=fallback}
+}
 function checkpoint(){history.push(snapshot());if(history.length>100)history.shift()}
 function select(id){selected=selected===id?null:id;render()}
 function move(id,tier,before=null){if(!lookup.has(id)||!all.includes(tier)||id===before)return;checkpoint();for(const k of all)state[k]=state[k].filter(x=>x!==id);const i=state[tier].indexOf(before);if(i>=0)state[tier].splice(i,0,id);else state[tier].push(id);selected=null;persist();render();announce(lookup.get(id)[1]+" → "+(tier==="U"?"Unranked":tier))}
@@ -71,7 +127,7 @@ else if(id==="fatou"||id==="vitali"){[1,2,4].forEach((n,i)=>line([[0,0],[0,n/4],
 else if(id==="uniform-integral"||id==="dini"){[1,2,4].forEach((n,i)=>curve(x=>.6*x+.28*(1-x)/n,["#789bb8","#a7d6f4","#e6f3ff"][i]));curve(x=>.6*x,"#ffbf7f",true);caption="A shrinking uniform error band controls the entire graph and its integral."}
 else if(id==="uniform-derivative"){curve(x=>.05*Math.sin(40*x)+.5,"#92c5e8");curve(x=>.38*Math.cos(40*x)+.5,"#ffbf7f");caption="Small oscillations can have large slopes: uniform convergence of functions alone does not control derivatives. Curves are vertically offset and scaled for illustration."}
 else return null;svg.setAttribute("aria-label",caption);const wrap=el("div","diagram");wrap.append(svg,el("small","",caption));return wrap}
-function show(id,pin,origin){if(!pin&&pinned)return;clearTimeout(hideTimer);clearTimeout(hoverTimer);current=id;pinned=pin;opener=origin;const t=lookup.get(id);$("detailTitle").textContent=t[1];$("detailOp").textContent=t[2];const body=$("detailBody");body.replaceChildren();[["Statement",3],["Use case",4],["Proof",5],["Intuition",6],["Example / caveat",7]].forEach(([name,i])=>{body.append(el("h3","",name),el("p",i===3?"statement":"",t[i]))});const diagram=plot(id);if(diagram)body.append(diagram);moveButtons($("detailMoves"),id,()=>close());$("detail").style.left=!pin&&innerWidth>600&&origin.getBoundingClientRect().left>innerWidth/2?"18px":"";$("detail").style.right=!pin&&innerWidth>600&&origin.getBoundingClientRect().left>innerWidth/2?"auto":"";$("detail").hidden=false;$("detail").scrollTop=0;$("backdrop").hidden=!pin;if(pin){$("detail").setAttribute("role","dialog");$("detail").setAttribute("aria-modal","true");$("closeDetail").focus()}else{$("detail").setAttribute("role","complementary");$("detail").removeAttribute("aria-modal")}}
+function show(id,pin,origin){if(!pin&&pinned)return;clearTimeout(hideTimer);clearTimeout(hoverTimer);current=id;pinned=pin;opener=origin;const t=lookup.get(id),math=window.THEOREM_MATH?.[id];$("detailTitle").textContent=t[1];typeset($("detailOp"),math?.[0],t[2]);const body=$("detailBody");body.replaceChildren();[["Statement",3,1],["Use case",4],["Proof",5,2],["Intuition",6],["Example / caveat",7,3]].forEach(([name,i,m])=>{const content=el("div","detail-text"+(i===3?" statement":""));typeset(content,math?.[m],t[i]);body.append(el("h3","",name),content)});const diagram=plot(id);if(diagram)body.append(diagram);moveButtons($("detailMoves"),id,()=>close());$("detail").style.left=!pin&&innerWidth>600&&origin.getBoundingClientRect().left>innerWidth/2?"18px":"";$("detail").style.right=!pin&&innerWidth>600&&origin.getBoundingClientRect().left>innerWidth/2?"auto":"";$("detail").classList.toggle("pinned",pin);$("detail").hidden=false;body.scrollTop=0;$("backdrop").hidden=!pin;if(pin){$("detail").setAttribute("role","dialog");$("detail").setAttribute("aria-modal","true");$("closeDetail").focus()}else{$("detail").setAttribute("role","complementary");$("detail").removeAttribute("aria-modal")}}
 function close(){clearTimeout(hoverTimer);clearTimeout(hideTimer);const was=pinned;pinned=false;current=null;$("detail").hidden=true;$("backdrop").hidden=true;if(was&&opener?.isConnected)opener.focus()}
 $("detail").addEventListener("pointerenter",()=>clearTimeout(hideTimer));$("detail").addEventListener("pointerleave",()=>{if(!pinned)hideTimer=setTimeout(close,400)});$("closeDetail").onclick=close;$("backdrop").onclick=close;document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(current)close();else if(selected){selected=null;render()}}if(e.key==="Tab"&&pinned){const buttons=[...$("detail").querySelectorAll("button")];if(e.shiftKey&&document.activeElement===buttons[0]){e.preventDefault();buttons.at(-1).focus()}else if(!e.shiftKey&&document.activeElement===buttons.at(-1)){e.preventDefault();buttons[0].focus()}}});
 $("cancelSelect").onclick=()=>{selected=null;render()};$("undo").onclick=()=>{if(history.length){restore(history.pop());selected=null;persist();render();announce("Move undone.")}};$("reset").onclick=()=>{if(state.U.length===T.length)return;if(!confirm("Return every theorem to the unranked tray?"))return;checkpoint();state=Object.fromEntries(all.map(k=>[k,k==="U"?T.map(t=>t[0]):[]]));selected=null;persist();render();announce("All theorems reset.")};
@@ -79,6 +135,7 @@ $("share").onclick=async()=>{const url=shareUrl();try{await navigator.clipboard.
 function wrapText(ctx,txt,width){const words=txt.split(" "),lines=[];let line="";for(const w of words){if(line&&ctx.measureText(line+" "+w).width>width){lines.push(line);line=w}else line+=(line?" ":"")+w}if(line)lines.push(line);return lines}
 $("png").onclick=()=>{const c=document.createElement("canvas"),w=1400,label=110,pad=20,cardW=198,cardH=88,gap=5,cols=6;const groups=state.U.length?[...tiers,"U"]:tiers;const heights=groups.map(k=>Math.max(100,Math.ceil(state[k].length/cols)*(cardH+gap)+10));c.width=w;c.height=120+heights.reduce((a,b)=>a+b,0)+45;const ctx=c.getContext("2d");ctx.fillStyle="#141414";ctx.fillRect(0,0,w,c.height);ctx.fillStyle="#fff";ctx.font="bold 39px system-ui";ctx.fillText("The Ultimate Limit Interchange Tier List",pad,53);ctx.fillStyle="#bbb";ctx.font="21px system-ui";ctx.fillText((T.length-state.U.length)+" / "+T.length+" ranked · Make your own at sphere-homotopy.github.io/x_memes/limit-tier-list/",pad,88);let y=110;groups.forEach((k,i)=>{const h=heights[i];ctx.fillStyle="#252525";ctx.fillRect(pad+label,y,w-pad*2-label,h-2);ctx.fillStyle=k==="U"?"#777":colors[i];ctx.fillRect(pad,y,label-2,h-2);ctx.fillStyle="#111";ctx.font=k==="U"?"bold 17px system-ui":"bold 40px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(k==="U"?"Unranked":k,pad+label/2,y+h/2);state[k].forEach((id,j)=>{const t=lookup.get(id),x=pad+label+5+j%cols*(cardW+gap),cy=y+5+Math.floor(j/cols)*(cardH+gap);ctx.fillStyle="#e8e6e1";ctx.fillRect(x,cy,cardW,cardH);ctx.fillStyle="#151515";ctx.font="bold 17px system-ui";const lines=wrapText(ctx,t[1],cardW-12);lines.forEach((l,k2)=>ctx.fillText(l,x+cardW/2,cy+24+k2*20));ctx.font="14px Georgia";ctx.fillStyle="#555";ctx.fillText(t[2],x+cardW/2,cy+73)});y+=h});ctx.textAlign="left";ctx.textBaseline="alphabetic";ctx.font="16px system-ui";ctx.fillStyle="#aaa";ctx.fillText("Rank by usefulness, elegance or personal bias. @sphere_homotopy",pad,y+28);c.toBlob(blob=>{if(!blob){announce("Could not export image.");return}const url=URL.createObjectURL(blob),a=el("a");a.href=url;a.download="limit-interchange-tier-list.png";document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);announce("PNG exported.")},"image/png")};
 render();
+document.addEventListener("DOMContentLoaded",()=>{if(current&&opener&&window.katex)show(current,pinned,opener)});
 </script>
 </body>
 </html>
