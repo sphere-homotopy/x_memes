@@ -4,28 +4,33 @@ import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 
 const context=vm.createContext({window:{}});
-for(const file of ['theorems.js','theorem-math.js','lessons-integration.js','lessons-series.js','lessons-compactness.js']){
+for(const file of ['theorems.js','theorem-math.js','lessons-integration.js','lessons-series.js','lessons-compactness.js','proofs-measure.js','proofs-uniform.js','proofs-series.js']){
   vm.runInContext(await readFile(new URL(file,import.meta.url),'utf8'),context,{filename:file});
 }
-const {THEOREMS,THEOREM_MATH,THEOREM_LESSONS}=context.window;
+const {THEOREMS,THEOREM_MATH,THEOREM_LESSONS,THEOREM_PROOFS}=context.window;
 const html=await readFile(new URL('index.html',import.meta.url),'utf8');
 test('every theorem has a complete worked lesson and a proof',()=>{
   const ids=THEOREMS.map(t=>t[0]);
   assert.equal(new Set(ids).size,ids.length);
   assert.equal(Object.keys(THEOREM_LESSONS).length,ids.length);
+  assert.equal(Object.keys(THEOREM_PROOFS).length,ids.length);
   for(const id of ids){
     const lesson=THEOREM_LESSONS[id];
     assert.ok(lesson,id);
     assert.equal(lesson.steps.length,3,id);
     for(const field of ['title','goal','why','intuition'])assert.ok(lesson[field]?.trim(),id+' '+field);
     for(const step of lesson.steps){assert.equal(step.length,2,id);assert.ok(step.every(s=>s.trim()),id);}
+    const proof=THEOREM_PROOFS[id];
+    assert.ok(proof?.idea&&proof.key&&proof.uses.length,id+' proof structure');
+    assert.ok(proof.steps.length>=3,id+' proof steps');
+    for(const step of proof.steps){assert.equal(step.length,2,id);assert.ok(step.every(s=>s.trim()),id);}
     assert.ok(THEOREM_MATH[id]?.[2]?.trim(),id+' proof');
   }
 });
 test('math delimiters and TeX braces are balanced',()=>{
   const re=/(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$)/g;
   for(const [id,l] of Object.entries(THEOREM_LESSONS)){
-    for(const source of [...THEOREM_MATH[id],l.goal,l.why,l.intuition,...l.steps.flat()]){
+    for(const source of [...THEOREM_MATH[id],l.goal,l.why,l.intuition,...l.steps.flat(),THEOREM_PROOFS[id].idea,THEOREM_PROOFS[id].key,...THEOREM_PROOFS[id].steps.flat()]){
       for(const token of source.split(re)){
         if(!token.startsWith('$')){assert.ok(!token.includes('$'),id);continue;}
         const d=token.startsWith('$$')?2:1;
@@ -43,6 +48,9 @@ test('reader has an atomic catalogue matching the source files',()=>{
   assert.equal(JSON.stringify(payload.theorems),JSON.stringify(THEOREMS));
   assert.equal(JSON.stringify(payload.math),JSON.stringify(THEOREM_MATH));
   assert.equal(JSON.stringify(payload.lessons),JSON.stringify(THEOREM_LESSONS));
+  assert.equal(JSON.stringify(payload.proofs),JSON.stringify(THEOREM_PROOFS));
+  assert.ok(html.includes('appendProof(body,window.THEOREM_PROOFS'));
+  assert.ok(html.includes('id="proofJump"'));
   assert.ok(html.includes('appendLesson(body,lesson,t[4])'));
   assert.ok(html.includes('Why the hypotheses matter'));
   new vm.Script(html.match(/<script>\s*([\s\S]*?)<\/script>/)[1]);
