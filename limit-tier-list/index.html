@@ -11,7 +11,10 @@
 <link rel="stylesheet" href="../support.css">
 <script src="../analytics.js"></script>
 <script src="theorems.js"></script>
-<script src="theorem-math.js?v=2"></script>
+<script src="theorem-math.js?v=3"></script>
+<script src="lessons-integration.js?v=3"></script>
+<script src="lessons-series.js?v=3"></script>
+<script src="lessons-compactness.js?v=3"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
 <style>
@@ -62,6 +65,25 @@ button,a{touch-action:manipulation}button{font:inherit;color:inherit;cursor:poin
  #detailMoves .move:last-child{grid-column:1/-1;min-height:32px}
  #detailMoves .move{min-height:40px}
 }
+
+/* Worked examples: a short problem followed by numbered, justified transitions. */
+#detail.pinned{width:min(710px,calc(100vw - 36px))}
+.lesson-title{font-weight:700;font-size:18px;line-height:1.35;margin:0 0 10px;color:#f4f4f4}
+.lesson-goal{padding:12px 14px;background:#303030;border:1px solid #464646;border-radius:6px}
+.lesson-steps{display:grid;gap:14px;margin:16px 0 0}
+.lesson-step{display:grid;grid-template-columns:26px minmax(0,1fr);column-gap:10px;align-items:start}
+.lesson-step-number{width:25px;height:25px;border-radius:50%;background:#3b4148;color:#eee;font-size:13px;font-weight:700;display:grid;place-items:center;margin-top:1px}
+.lesson-step-body{min-width:0}
+.lesson-step-title{font-size:14px;font-weight:750;line-height:1.4;margin:2px 0 6px;color:#f4f4f4}
+.lesson-step .detail-text{color:#e0e0e0}
+.lesson-warning{padding:12px 14px;border-left:3px solid #d6ad73;background:#2b2824;border-radius:0 5px 5px 0}
+#detail .detail-text{min-width:0}
+#detail .inline-math{vertical-align:baseline}
+#detail .formula{margin:5px 0}
+#detail .formula-fallback{white-space:pre-wrap;overflow-wrap:anywhere;font-family:monospace;font-size:.9em}
+#detail .lesson-step:last-child .lesson-step-number{background:#48604b}
+#detail .lesson-step:last-child .lesson-step-title{color:#d2e8d3}
+@media(max-width:600px){#detail.pinned{width:100%}.lesson-title{font-size:17px}.lesson-step{grid-template-columns:22px minmax(0,1fr);column-gap:8px}.lesson-step-number{width:22px;height:22px}.lesson-goal,.lesson-warning{padding:10px}.lesson-steps{gap:16px}}
 </style>
 </head>
 <body>
@@ -74,7 +96,7 @@ button,a{touch-action:manipulation}button{font:inherit;color:inherit;cursor:poin
 <div class="trayhead"><h2>Unranked theorems</h2><span class="muted progress" id="progress"></span></div>
 <div id="tray" class="tray" data-tier="U" aria-label="Unranked theorems"></div>
 <div id="selection" hidden><span id="selectedName"></span><div id="quickMoves" class="moves" style="margin:0"></div><button class="tool" id="cancelSelect">Cancel</button></div>
-<p class="muted" style="font-size:12px">Includes direct interchange results, related inequalities, convergence criteria and compactness tools. Statements use standard sufficient hypotheses; proofs are concise.</p>
+<p class="muted" style="font-size:12px">Includes direct interchange results, related inequalities, convergence criteria and compactness tools. Every card includes a worked problem with checked hypotheses, the justified transition, a counterexample and a proof. Statements use standard sufficient hypotheses.</p>
 <div class="support-project-wrap"><a class="support-project" href="../go/kofi/limit-tier-list/" target="_blank" rel="noopener noreferrer">Support this project ↗</a></div>
 </main>
 <div id="backdrop" class="backdrop" hidden></div>
@@ -97,21 +119,50 @@ function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=
 // Explicit delimiters avoid guessing at math in ordinary English text.
 function typeset(target,source,fallback){
   target.replaceChildren();
-  if(!source||!window.katex){target.textContent=fallback;return}
+  if(!source){target.textContent=fallback||"";return}
+  if(!window.katex&&fallback){target.textContent=fallback;return}
   const fragment=document.createDocumentFragment();
   const tokens=source.split(/(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$)/g);
-  try{
-    for(const token of tokens){
-      if(!token)continue;
-      if(token.startsWith("$")){
-        const display=token.startsWith("$"),n=display?2:1;
-        const wrapper=el(display?"div":"span",display?"formula":"inline-math");
-        window.katex.render(token.slice(n,-n),wrapper,{displayMode:display,throwOnError:true,strict:"ignore",trust:false,output:"htmlAndMathml"});
-        fragment.append(wrapper);
-      }else fragment.append(document.createTextNode(token));
-    }
-    target.append(fragment);
-  }catch(error){console.warn("Theorem math rendering failed",error);target.textContent=fallback}
+  for(const token of tokens){
+    if(!token)continue;
+    if(token.startsWith("$")){
+      const display=token.startsWith("$$"),n=display?2:1;
+      const wrapper=el(display?"div":"span",display?"formula":"inline-math");
+      const tex=token.slice(n,-n);
+      try{
+        if(!window.katex)throw Error("KaTeX is not ready");
+        window.katex.render(tex,wrapper,{displayMode:display,throwOnError:true,strict:"ignore",trust:false,output:"htmlAndMathml"});
+      }catch(error){
+        wrapper.textContent=tex;
+        wrapper.classList.add("formula-fallback");
+        console.warn("Formula rendering failed",tex,error);
+      }
+      fragment.append(wrapper);
+    }else fragment.append(document.createTextNode(token));
+  }
+  target.append(fragment);
+}
+function appendSection(body,name,source,fallback,cls=""){
+  const content=el("div","detail-text"+(cls?" "+cls:""));
+  typeset(content,source,fallback);
+  body.append(el("h3","",name),content);
+  return content;
+}
+function appendLesson(body,lesson,fallback){
+  if(!lesson){appendSection(body,"Use case",null,fallback);return}
+  body.append(el("h3","","Worked use case"),el("div","lesson-title",lesson.title));
+  const goal=el("div","detail-text lesson-goal");
+  typeset(goal,lesson.goal);
+  body.append(goal);
+  const steps=el("div","lesson-steps");
+  lesson.steps.forEach(([title,source],i)=>{
+    const row=el("div","lesson-step"),content=el("div","lesson-step-body");
+    const detail=el("div","detail-text");typeset(detail,source);
+    content.append(el("div","lesson-step-title",title),detail);
+    row.append(el("span","lesson-step-number",String(i+1)),content);
+    steps.append(row);
+  });
+  body.append(steps);
 }
 function checkpoint(){history.push(snapshot());if(history.length>100)history.shift()}
 function select(id){selected=selected===id?null:id;render()}
@@ -129,7 +180,7 @@ else if(id==="fatou"||id==="vitali"){[1,2,4].forEach((n,i)=>line([[0,0],[0,n/4],
 else if(id==="uniform-integral"||id==="dini"){[1,2,4].forEach((n,i)=>curve(x=>.6*x+.28*(1-x)/n,["#789bb8","#a7d6f4","#e6f3ff"][i]));curve(x=>.6*x,"#ffbf7f",true);caption="A shrinking uniform error band controls the entire graph and its integral."}
 else if(id==="uniform-derivative"){curve(x=>.05*Math.sin(40*x)+.5,"#92c5e8");curve(x=>.38*Math.cos(40*x)+.5,"#ffbf7f");caption="Small oscillations can have large slopes: uniform convergence of functions alone does not control derivatives. Curves are vertically offset and scaled for illustration."}
 else return null;svg.setAttribute("aria-label",caption);const wrap=el("div","diagram");wrap.append(svg,el("small","",caption));return wrap}
-function show(id,pin,origin){if(!pin&&pinned)return;clearTimeout(hideTimer);clearTimeout(hoverTimer);current=id;pinned=pin;opener=origin;const t=lookup.get(id),math=window.THEOREM_MATH?.[id];$("detailTitle").textContent=t[1];typeset($("detailOp"),math?.[0],t[2]);const body=$("detailBody");body.replaceChildren();[["Statement",3,1],["Use case",4],["Proof",5,2],["Intuition",6],["Example / caveat",7,3]].forEach(([name,i,m])=>{const content=el("div","detail-text"+(i===3?" statement":""));typeset(content,math?.[m],t[i]);body.append(el("h3","",name),content)});const diagram=plot(id);if(diagram)body.append(diagram);moveButtons($("detailMoves"),id,()=>close());$("detail").style.left=!pin&&innerWidth>600&&origin.getBoundingClientRect().left>innerWidth/2?"18px":"";$("detail").style.right=!pin&&innerWidth>600&&origin.getBoundingClientRect().left>innerWidth/2?"auto":"";$("detail").classList.toggle("pinned",pin);$("detail").hidden=false;body.scrollTop=0;$("backdrop").hidden=!pin;if(pin){$("detail").setAttribute("role","dialog");$("detail").setAttribute("aria-modal","true");$("closeDetail").focus()}else{$("detail").setAttribute("role","complementary");$("detail").removeAttribute("aria-modal")}}
+function show(id,pin,origin){if(!pin&&pinned)return;clearTimeout(hideTimer);clearTimeout(hoverTimer);current=id;pinned=pin;opener=origin;const t=lookup.get(id),math=window.THEOREM_MATH?.[id],lesson=window.THEOREM_LESSONS?.[id];$("detailTitle").textContent=t[1];typeset($("detailOp"),math?.[0],t[2]);const body=$("detailBody");body.replaceChildren();appendSection(body,"Statement",math?.[1],t[3],"statement");appendLesson(body,lesson,t[4]);appendSection(body,"Intuition",lesson?.intuition,t[6]);const diagram=plot(id);if(diagram)body.append(diagram);appendSection(body,"Why the hypotheses matter",lesson?.why,lesson?null:t[7],"lesson-warning");appendSection(body,"Proof",math?.[2],t[5]);moveButtons($("detailMoves"),id,()=>close());$("detail").style.left=!pin&&innerWidth>600&&origin.getBoundingClientRect().left>innerWidth/2?"18px":"";$("detail").style.right=!pin&&innerWidth>600&&origin.getBoundingClientRect().left>innerWidth/2?"auto":"";$("detail").classList.toggle("pinned",pin);$("detail").hidden=false;body.scrollTop=0;$("backdrop").hidden=!pin;if(pin){$("detail").setAttribute("role","dialog");$("detail").setAttribute("aria-modal","true");$("closeDetail").focus()}else{$("detail").setAttribute("role","complementary");$("detail").removeAttribute("aria-modal")}}
 function close(){clearTimeout(hoverTimer);clearTimeout(hideTimer);const was=pinned;pinned=false;current=null;$("detail").hidden=true;$("backdrop").hidden=true;if(was&&opener?.isConnected)opener.focus()}
 $("detail").addEventListener("pointerenter",()=>clearTimeout(hideTimer));$("detail").addEventListener("pointerleave",()=>{if(!pinned)hideTimer=setTimeout(close,400)});$("closeDetail").onclick=close;$("backdrop").onclick=close;document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(current)close();else if(selected){selected=null;render()}}if(e.key==="Tab"&&pinned){const buttons=[...$("detail").querySelectorAll("button")];if(e.shiftKey&&document.activeElement===buttons[0]){e.preventDefault();buttons.at(-1).focus()}else if(!e.shiftKey&&document.activeElement===buttons.at(-1)){e.preventDefault();buttons[0].focus()}}});
 $("cancelSelect").onclick=()=>{selected=null;render()};$("undo").onclick=()=>{if(history.length){restore(history.pop());selected=null;persist();render();announce("Move undone.")}};$("reset").onclick=()=>{if(state.U.length===T.length)return;if(!confirm("Return every theorem to the unranked tray?"))return;checkpoint();state=Object.fromEntries(all.map(k=>[k,k==="U"?T.map(t=>t[0]):[]]));selected=null;persist();render();announce("All theorems reset.")};
