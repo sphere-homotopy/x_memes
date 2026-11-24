@@ -47,3 +47,23 @@ test('reader has an atomic catalogue matching the source files',()=>{
   assert.ok(html.includes('Why the hypotheses matter'));
   new vm.Script(html.match(/<script>\s*([\s\S]*?)<\/script>/)[1]);
 });
+
+
+test('X intent is concise and never contains the serialized ranking',()=>{
+  const code=html.match(/<script>\s*([\s\S]*?)<\/script>/)[1];
+  const start=code.indexOf('const publicTierListUrl=');
+  const end=code.indexOf('$("tweet").onclick',start);
+  assert.ok(start>=0&&end>start);
+  const build=new Function('T','tiers','state','lookup',code.slice(start,end)+'\nreturn {text:buildTweet(),intent:tweetIntent()};');
+  const tiers=['S','A','B','C','D','F'];
+  const ids=THEOREMS.map(t=>t[0]),lookup=new Map(THEOREMS.map(t=>[t[0],t]));
+  for(const ranked of [[],['dct','fubini'],ids]){
+    const state={S:ranked,A:[],B:[],C:[],D:[],F:[],U:ids.filter(id=>!ranked.includes(id))};
+    const {text,intent}=build(THEOREMS,tiers,state,lookup);
+    const params=new URL(intent).searchParams;
+    assert.equal(params.get('url'),'https://sphere-homotopy.github.io/x_memes/limit-tier-list/');
+    assert.equal(params.get('text'),text);
+    assert.ok(Array.from(text).length+24<=280);
+    if(ranked.length)assert.match(text,/S tier:/);
+  }
+});
