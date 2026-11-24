@@ -9,6 +9,7 @@ Project pageviews are separated by path:
 - Millionaire: `/x_memes/millionaire/`
 - Custom Boob: `/x_memes/custom-boob/`
 - Mushroom Revenge: `/x_memes/mushroom-revenge/`
+- Limit Interchange Tier List: `/x_memes/limit-tier-list/`
 
 Acquisition experiments use first-party route paths instead of UTM parameters:
 - Reddit: `/x_memes/go/millionaire/reddit/`
@@ -20,6 +21,7 @@ Ko-fi click intents use first-party route paths before redirecting to Ko-fi:
 - Mirrors: `/x_memes/go/kofi/mirrors/`
 - Custom Boob: `/x_memes/go/kofi/custom-boob/`
 - Mushroom Revenge: `/x_memes/go/kofi/mushroom-revenge/`
+- Limit Interchange Tier List: `/x_memes/go/kofi/limit-tier-list/`
 
 This makes project/source attribution readable from path/referrer dimensions and avoids relying on cross-site cookies.
 
