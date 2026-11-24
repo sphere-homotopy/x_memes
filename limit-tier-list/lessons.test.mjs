@@ -38,11 +38,11 @@ test('math delimiters and TeX braces are balanced',()=>{
     }
   }
 });
-test('reader loads lesson files before rendering and has valid JavaScript',()=>{
-  for(const file of ['lessons-integration.js','lessons-series.js','lessons-compactness.js']){
-    assert.ok(html.indexOf(file)>0);
-    assert.ok(html.indexOf(file)<html.indexOf('function appendLesson'));
-  }
+test('reader has an atomic catalogue matching the source files',()=>{
+  const payload=JSON.parse(html.match(/<script id="theorem-catalogue" type="application\/json">([\s\S]*?)<\/script>/)[1]);
+  assert.equal(JSON.stringify(payload.theorems),JSON.stringify(THEOREMS));
+  assert.equal(JSON.stringify(payload.math),JSON.stringify(THEOREM_MATH));
+  assert.equal(JSON.stringify(payload.lessons),JSON.stringify(THEOREM_LESSONS));
   assert.ok(html.includes('appendLesson(body,lesson,t[4])'));
   assert.ok(html.includes('Why the hypotheses matter'));
   new vm.Script(html.match(/<script>\s*([\s\S]*?)<\/script>/)[1]);
